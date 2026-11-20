@@ -77,6 +77,30 @@ test.describe("Transaction List Page", () => {
     ).toBeVisible();
   });
 
+  // Dates are calendar dates: they must read the same in every time zone.
+  // CI runs in UTC, so pin the browser to zones on both sides of it.
+  for (const timezoneId of ["America/Sao_Paulo", "Asia/Tokyo"]) {
+    test.describe(`in ${timezoneId}`, () => {
+      test.use({ timezoneId });
+
+      test("shows the transaction's own date", async ({ page }) => {
+        await createAccount(page, "Main");
+        await fillTransactionForm(page, {
+          date: "2025-01-15",
+          description: `Date check ${timezoneId}`,
+          amount: "10",
+          account: "Main (PLN)",
+        });
+
+        const row = page
+          .getByRole("table")
+          .getByTestId("transaction-row")
+          .filter({ hasText: `Date check ${timezoneId}` });
+        await expect(row).toContainText("Jan 15, 2025");
+      });
+    });
+  }
+
   test("table displays transactions with correct columns", async ({
     page,
   }) => {
