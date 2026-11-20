@@ -17,6 +17,7 @@ they deliver (e.g. `Delivers: T2, T5`).
 | T8 | Plan limits | Free plan: up to 3 budgets. Pro: unlimited. Hitting the limit prompts an upgrade. |
 | T9 | Compliance | Budgets (and alert records) are included in the GDPR export and removed on account deletion. |
 | T10 | No regressions | Existing features keep working (including deleting a category that has a budget); `pnpm run check` passes. |
+| T11 | README | The README briefly describes the architecture and the features, with a focus on budgets, and includes screenshots. |
 
 ## Design decisions
 
@@ -129,17 +130,19 @@ count toward a budget.
 One PR per step. Each step is merged before the next one branches from
 `main` (no stacked PRs), and every merge leaves `main` shippable: user data
 never exists without its compliance handling, and `pnpm run check` passes.
+Rows are in execution order; step IDs never change once assigned.
 
 | Step | PR title | Delivers | Depends on | Status |
 | --- | --- | --- | --- | --- |
-| S0 | `docs: add budgets plan` | — | — | todo |
+| S0 | `docs: add budgets plan` | — | — | done (#2) |
+| S9 | `chore(seed): add demo user seed for local testing` | — | S0 | in review |
 | S1 | `fix(receipts): store scanned receipts as expenses` | D9, T5 | S0 | todo |
 | S2 | `feat(budgets): add budgets data model` | T9, T10 (D4) | S0 | todo |
 | S3 | `feat(budgets): add budgets page` | T1, T2 | S2 | todo |
 | S4 | `feat(budgets): show monthly progress` | T3, T4, T5, T6 | S1, S3 | todo |
 | S5 | `feat(budgets): email when a budget is exceeded` | T7 | S4 | todo |
 | S6 | `feat(billing): limit budgets on the free plan` | T8 | S3 | todo |
-| S7 | `docs: document budgets` | T10 | S5, S6 | todo |
+| S7 | `docs: document architecture and budgets in the README` | T10, T11 | S5, S6 | todo |
 | S8 | `fix(transactions): show dates without a time zone shift` (optional) | — | — | todo |
 
 Conventions for every PR:
@@ -154,6 +157,9 @@ Conventions for every PR:
 Manual testing setups:
 - **Dev:** `AI_FAKE=1 pnpm run dev` → http://127.0.0.1:3000. Uses your
   persistent database in `./data/pg`; emails are printed in the terminal.
+  Log in as the demo user (`demo@example.com` / `demo-password`), created
+  with `pnpm run seed:demo` (`--reset` to rebuild it) while the dev server is
+  stopped.
 - **Test mode:** `TEST_MODE=1 AI_FAKE=1 pnpm run dev`. In-memory database
   (create a user at `/setup`), emails readable at `/test-emails`, plan switch
   via `fetch('/test-set-plan?plan=pro', { method: 'POST' })` in the browser
@@ -162,6 +168,24 @@ Manual testing setups:
 
 ### S0. Commit the plan
 This file. Reviewed as text; nothing to test.
+
+### S9. Demo seed for local testing
+- `pnpm run seed:demo [--reset]` creates a dedicated, email-verified demo
+  user with the default categories plus a third-level one (Entertainment ›
+  Dining Out › Coffee), two accounts, and about three months of transactions
+  dated relative to today (UTC): income, a refund, uncategorized expenses,
+  and rows on the last day of the previous month and the first of this one.
+  `--reset` deletes the demo user through `hardDeleteUser` and rebuilds it;
+  no other user is touched. Refuses to run while port 3000 is in use.
+- Later steps extend it: S3 adds sample budgets, and from S4 the data gives
+  one budget under, one close to, and one over its limit.
+- Tests: unit tests for dates, month boundaries, the refund, the third-level
+  category, and reset only replacing the demo user.
+- Manual: stop the dev server → `pnpm run seed:demo` prints the login and
+  counts (running it again without `--reset` refuses) → start the dev server
+  and log in as the demo user. Dashboard shows three months; Transactions has
+  this month's refund and uncategorized rows; Categories shows Coffee under
+  Dining Out.
 
 ### S1. Store scanned receipts as expenses (D9)
 - `saveReceiptAndLink` stores a new receipt transaction as `-abs(total)`.
@@ -257,11 +281,22 @@ This file. Reviewed as text; nothing to test.
   Switch to Pro in the console, reload → the 4th can be added. Switch back to
   Free → all 4 remain, Add is blocked, and Billing shows 4 of 3.
 
-### S7. Documentation
-- README feature list gains Budgets; known limitations noted (receipt items
-  counted by the transaction's category, UTC month, single currency). Plan
-  statuses updated.
-- Manual: full demo run-through of S3–S6 on a fresh test-mode server.
+### S7. README: architecture, features, screenshots (T11)
+- **Architecture (brief):** stack; folder layout; how a feature flows from
+  the schema through `*.server.ts` and `*.functions.ts` to a route with
+  TanStack Query; where auth, plan limits, email and the hourly sweep plug in.
+- **Features:** short overview of the existing ones, then a Budgets section:
+  what a budget counts (subcategories, expenses only, UTC calendar month),
+  the over-budget email, the Free/Pro limit, and known limitations (receipt
+  items counted by the transaction's category, single currency).
+- **Screenshots** of the demo user (`pnpm run seed:demo --reset`, so they
+  show demo data only), captured with playwright-cli and stored in
+  `docs/screenshots/`: Budgets page with under / near / over budgets, the
+  add-budget dialog, the Free plan limit with the upgrade prompt, and the
+  dashboard. The over-budget email is shown as a text sample.
+- Plan statuses updated.
+- Manual: read the README on the PR's GitHub page (images render); full demo
+  run-through of S3–S6 on a freshly seeded dev server.
 
 ### S8. Transactions date display (optional)
 - `formatTxDate` in `transactions.tsx` parses calendar dates as UTC, so dates

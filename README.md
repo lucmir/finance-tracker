@@ -45,6 +45,7 @@ instance under `./data/pg`. See `.env.example` for optional settings (set
 | `pnpm run check` | Typecheck, lint, unit tests and E2E tests |
 | `pnpm run test` / `pnpm run test:e2e` | Unit tests (Vitest) / E2E tests (Playwright) |
 | `pnpm run db:generate` | Generate a Drizzle migration from `src/db/schema.ts` |
+| `pnpm run seed:demo [--reset]` | Create a demo user (`demo@example.com` / `demo-password`) with three months of data in the local database (stop the dev server first) |
 | `pnpm run i18n:compile` | Compile Paraglide messages from `messages/` |
 
 ## Project layout
