@@ -9,7 +9,10 @@ import {
   doublePrecision,
   serial,
   index,
+  unique,
+  check,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 export const auth_token_type = pgEnum("auth_token_type", [
   "verify_email",
@@ -275,6 +278,59 @@ export const stripe_events = pgTable("stripe_events", {
     .notNull()
     .defaultNow(),
 });
+
+// Monthly spending limit per category. "Spent" is never stored: it's computed
+// from transactions for the current UTC month, including all subcategories,
+// so budgets reset every month without a job. One budget per category.
+export const budgets = pgTable(
+  "budgets",
+  {
+    id: text("id").primaryKey(),
+    user_id: text("user_id")
+      .notNull()
+      .references(() => users.id),
+    category_id: text("category_id")
+      .notNull()
+      .references(() => categories.id),
+    // Integer minor units (grosze/cents) — never store money as floats.
+    limit_minor: integer("limit_minor").notNull(),
+    created_at: timestamp("created_at", { withTimezone: true, mode: "date" })
+      .notNull()
+      .defaultNow(),
+    updated_at: timestamp("updated_at", { withTimezone: true, mode: "date" })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    unique("budgets_user_category_unique").on(t.user_id, t.category_id),
+    check("budgets_limit_positive", sql`${t.limit_minor} > 0`),
+  ],
+);
+
+// One row per over-budget email sent: the unique (budget, month) pair is what
+// limits alerts to one per budget per calendar month (UTC), even when several
+// checks race. Inserted before sending; removed again if sending fails.
+export const budget_alerts = pgTable(
+  "budget_alerts",
+  {
+    id: text("id").primaryKey(),
+    budget_id: text("budget_id")
+      .notNull()
+      .references(() => budgets.id),
+    user_id: text("user_id")
+      .notNull()
+      .references(() => users.id),
+    // Calendar month the alert belongs to, "YYYY-MM" (UTC).
+    month: text("month").notNull(),
+    sent_at: timestamp("sent_at", { withTimezone: true, mode: "date" })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    unique("budget_alerts_budget_month_unique").on(t.budget_id, t.month),
+    index("budget_alerts_user_idx").on(t.user_id),
+  ],
+);
 
 export const todos = pgTable("todos", {
   id: serial("id").primaryKey(),

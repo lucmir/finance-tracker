@@ -36,6 +36,13 @@
       "when": 1795194435933,
       "tag": "0004_receipt_transactions_as_expenses",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1795197051562,
+      "tag": "0005_budgets",
+      "breakpoints": true
     }
   ]
 }
