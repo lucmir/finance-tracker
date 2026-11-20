@@ -1,4 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
+import { budgetAlertsAfter } from "#/server/budget-alerts.middleware";
+import { checkBudgetAlertsSafely } from "#/server/budget-alerts.server";
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db, schema } from "#/db";
@@ -1110,6 +1112,12 @@ async function* streamConfirmImport(
     }
   }
 
+  // This handler streams, so the budgetAlertsAfter middleware would run
+  // before these rows exist; check over-budget alerts here instead (D1).
+  if (insertRows.length > 0) {
+    await checkBudgetAlertsSafely(userId);
+  }
+
   yield {
     type: "complete",
     summary: {
@@ -1169,6 +1177,7 @@ export const getImportHistory = createServerFn({ method: "GET" }).handler(
 );
 
 export const deleteImportBatch = createServerFn({ method: "POST" })
+  .middleware([budgetAlertsAfter])
   .inputValidator(deleteImportBatchSchema)
   .handler(async ({ data }) => {
     const userId = await requireUserId();

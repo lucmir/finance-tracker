@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { budgetAlertsAfter } from "#/server/budget-alerts.middleware";
 import { eq, and, asc, count, sql, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { db, schema } from "#/db";
@@ -220,6 +221,7 @@ export const updateCategory = createServerFn({ method: "POST" })
   });
 
 export const deleteCategory = createServerFn({ method: "POST" })
+  .middleware([budgetAlertsAfter])
   .inputValidator(deleteCategorySchema)
   .handler(async ({ data }) => {
     const userId = await requireUserId();

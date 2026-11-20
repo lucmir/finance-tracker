@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { budgetAlertsAfter } from "#/server/budget-alerts.middleware";
 import { and, asc, eq, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db, schema } from "#/db";
@@ -238,6 +239,7 @@ export const previewRuleImpact = createServerFn({ method: "POST" })
   });
 
 export const applyRuleToExisting = createServerFn({ method: "POST" })
+  .middleware([budgetAlertsAfter])
   .inputValidator(applyRuleSchema)
   .handler(async ({ data }) => {
     const userId = await requireUserId();
@@ -333,6 +335,7 @@ const reCategorizeSchema = z.object({
 });
 
 export const reCategorizeTransactions = createServerFn({ method: "POST" })
+  .middleware([budgetAlertsAfter])
   .inputValidator(reCategorizeSchema)
   .handler(async ({ data }) => {
     const userId = await requireUserId();
