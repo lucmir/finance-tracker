@@ -18,6 +18,7 @@ they deliver (e.g. `Delivers: T2, T5`).
 | T9 | Compliance | Budgets (and alert records) are included in the GDPR export and removed on account deletion. |
 | T10 | No regressions | Existing features keep working (including deleting a category that has a budget); `pnpm run check` passes. |
 | T11 | README | The README briefly describes the architecture and the features, with a focus on budgets, and includes screenshots. |
+| T12 | Dashboard budget summary | The dashboard has a "Budgets this month" card: counts of over / close / on-track budgets, the most urgent budgets with their progress, a link to the Budgets page, and an empty state. |
 
 ## Design decisions
 
@@ -162,10 +163,11 @@ Rows are in execution order; step IDs never change once assigned.
 | S1 | `fix(receipts): store scanned receipts as expenses` | D9, T5 | S0 | done (#4) |
 | S2 | `feat(budgets): add budgets data model` | T9, T10 (D4) | S0 | done (#5) |
 | S3 | `feat(budgets): add budgets page` | T1, T2 | S2 | done (#8) |
-| S4 | `feat(budgets): show monthly progress` | T3, T4, T5, T6 | S1, S3 | in review |
-| S5 | `feat(budgets): email when a budget is exceeded` | T7 | S4 | todo |
+| S4 | `feat(budgets): show monthly progress` | T3, T4, T5, T6 | S1, S3 | done (#9) |
+| S5 | `feat(budgets): email when a budget is exceeded` | T7 | S4 | in review |
 | S6 | `feat(billing): limit budgets on the free plan` | T8 | S3 | todo |
-| S7 | `docs: document architecture and budgets in the README` | T10, T11 | S5, S6 | todo |
+| S10 | `feat(dashboard): add a budgets summary card` | T12 | S4 | todo |
+| S7 | `docs: document architecture and budgets in the README` | T10, T11 | S5, S6, S10 | todo |
 | S8 | `fix(transactions): show dates without a time zone shift` (optional) | — | — | todo |
 
 Conventions for every PR:
@@ -308,6 +310,24 @@ This file. Reviewed as text; nothing to test.
 - Manual (Test mode): add 3 budgets → the 4th is blocked with an upgrade link.
   Switch to Pro in the console, reload → the 4th can be added. Switch back to
   Free → all 4 remain, Add is blocked, and Billing shows 4 of 3.
+
+### S10. Dashboard budget summary (T12)
+- A "Budgets this month" card below the Income / Expenses / Net cards:
+  counts of over / close / on-track budgets (counts, not money totals: a
+  parent budget already includes its subcategories' spending, so totals
+  would double-count), up to 4 budgets ordered by urgency (over first, then
+  by share used) with a bar, percentage, and "Over by X" / "X left",
+  "+ N more" and "Manage" links to `/budgets`, and an empty state linking
+  there too.
+- Always the current UTC month and all accounts, independent of the
+  dashboard's period and account filters; the title says so.
+- Reuses `getBudgets`; the progress bar and state logic move to a shared
+  component so the dashboard and the Budgets page stay identical.
+- Tests: E2E for the order (over first), the "+ N more" link, and the empty
+  state; the existing budgets specs guard the shared component.
+- Manual (Dev): demo user → Dashboard shows "1 over, 1 close, 1 on track"
+  with Entertainment first; a new user sees the empty state.
+- Done before S7, so the README screenshots include it.
 
 ### S7. README: architecture, features, screenshots (T11)
 - **Architecture (brief):** stack; folder layout; how a feature flows from

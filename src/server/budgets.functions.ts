@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { budgetAlertsAfter } from "#/server/budget-alerts.middleware";
 import { z } from "zod";
 import { MAX_BUDGET_LIMIT_MINOR } from "#/lib/budget-limits";
 import {
@@ -22,6 +23,7 @@ export const getBudgets = createServerFn({ method: "GET" }).handler(
 );
 
 export const createBudget = createServerFn({ method: "POST" })
+  .middleware([budgetAlertsAfter])
   .inputValidator(z.object({ categoryId: z.string().min(1), limitMinor }))
   .handler(async ({ data }) => {
     const userId = await requireUserId();
@@ -29,6 +31,7 @@ export const createBudget = createServerFn({ method: "POST" })
   });
 
 export const updateBudget = createServerFn({ method: "POST" })
+  .middleware([budgetAlertsAfter])
   .inputValidator(z.object({ id: z.string().min(1), limitMinor }))
   .handler(async ({ data }) => {
     const userId = await requireUserId();

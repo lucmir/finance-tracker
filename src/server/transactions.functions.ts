@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { budgetAlertsAfter } from "#/server/budget-alerts.middleware";
 import { eq, and, asc, desc, count, gte, lte, ilike, isNull, isNotNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db, schema } from "#/db";
@@ -273,6 +274,7 @@ export const getTransactionById = createServerFn({ method: "GET" })
   });
 
 export const createTransaction = createServerFn({ method: "POST" })
+  .middleware([budgetAlertsAfter])
   .inputValidator(createTransactionSchema)
   .handler(async ({ data }) => {
     const userId = await requireUserId();
@@ -316,6 +318,7 @@ export const createTransaction = createServerFn({ method: "POST" })
   });
 
 export const updateTransaction = createServerFn({ method: "POST" })
+  .middleware([budgetAlertsAfter])
   .inputValidator(updateTransactionSchema)
   .handler(async ({ data }) => {
     const userId = await requireUserId();
@@ -383,6 +386,7 @@ export const updateTransaction = createServerFn({ method: "POST" })
   });
 
 export const deleteTransaction = createServerFn({ method: "POST" })
+  .middleware([budgetAlertsAfter])
   .inputValidator(deleteTransactionSchema)
   .handler(async ({ data }) => {
     const userId = await requireUserId();

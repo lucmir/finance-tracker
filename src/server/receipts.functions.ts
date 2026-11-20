@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { budgetAlertsAfter } from "#/server/budget-alerts.middleware";
 import { eq, and, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { db, schema } from "#/db";
@@ -341,6 +342,7 @@ export const updateReceiptItems = createServerFn({ method: "POST" })
   });
 
 export const saveReceiptAndLink = createServerFn({ method: "POST" })
+  .middleware([budgetAlertsAfter])
   .inputValidator(
     z.object({
       imagePaths: z.array(z.string()),
