@@ -463,6 +463,8 @@ function CategoriesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: CATEGORIES_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      // Budgets on deleted categories are deleted with them.
+      queryClient.invalidateQueries({ queryKey: ["budgets"] });
     },
   });
 
