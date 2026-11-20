@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { MAX_BUDGET_LIMIT_MINOR } from "#/lib/budget-limits";
 import {
+  budgetMonth,
   createBudget as createBudgetForUser,
   deleteBudget as deleteBudgetForUser,
   listBudgets,
@@ -15,7 +16,8 @@ const limitMinor = z.number().int().positive().max(MAX_BUDGET_LIMIT_MINOR);
 export const getBudgets = createServerFn({ method: "GET" }).handler(
   async () => {
     const userId = await requireUserId();
-    return listBudgets(userId);
+    const now = new Date();
+    return { month: budgetMonth(now).month, budgets: await listBudgets(userId, now) };
   },
 );
 

@@ -22,6 +22,130 @@ async function addBudget(page: Page, category: string, limit: string) {
   await expect(dialog(page)).toBeHidden();
 }
 
+/** Dates in UTC, the timezone that defines "this month" (D3). */
+function utcDates() {
+  const now = new Date();
+  const iso = (d: Date) => d.toISOString().slice(0, 10);
+  const lastDayOfPreviousMonth = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 0),
+  );
+  return { today: iso(now), previousMonth: iso(lastDayOfPreviousMonth), now };
+}
+
+async function addTransaction(
+  page: Page,
+  opts: { date: string; amount: string; category: string; income?: boolean },
+) {
+  await page.goto("/transactions");
+  await page
+    .getByRole("banner")
+    .getByRole("button", { name: "Add Transaction" })
+    .click();
+  const modal = page.getByRole("dialog", { name: "New Transaction" });
+  await modal.getByLabel("Date").fill(`${opts.date}T12:00`);
+  await modal.getByLabel("Description").fill(`${opts.category} ${opts.amount}`);
+  await modal
+    .getByRole("spinbutton", { name: "Amount", exact: true })
+    .fill(opts.amount);
+  await modal.getByLabel("Account").selectOption("Main (PLN)");
+  await modal.getByLabel("Category").selectOption(opts.category);
+  if (opts.income) await modal.getByLabel("Income").check();
+  await modal.getByRole("button", { name: "Create Transaction" }).click();
+  await expect(modal).toBeHidden();
+}
+
+async function openBudgets(page: Page) {
+  await page.goto("/budgets");
+  await expect(
+    page.getByRole("heading", { name: "Budgets", exact: true }),
+  ).toBeVisible();
+}
+
+test.describe("Budget progress", () => {
+  test.beforeEach(async ({ page, signedInUser: _signedInUser }) => {
+    await openBudgets(page);
+  });
+
+  test("shows spent and what's left, including subcategories", async ({
+    page,
+  }) => {
+    const { today } = utcDates();
+    await addBudget(page, "Groceries", "500");
+    await addTransaction(page, { date: today, amount: "120", category: "— Vegetables" });
+    await addTransaction(page, { date: today, amount: "30", category: "Groceries" });
+
+    await openBudgets(page);
+    const row = rowFor(page, "Groceries");
+    await expect(row.getByTestId("budget-spent")).toHaveText("150.00");
+    await expect(row.getByTestId("budget-limit")).toHaveText("500.00 PLN");
+    await expect(row.getByTestId("budget-left")).toHaveText("350.00 PLN");
+    await expect(row.getByTestId("budget-progress")).toHaveAttribute(
+      "aria-valuenow",
+      "30",
+    );
+    await expect(row).toHaveAttribute("data-state", "under");
+    await expect(row.getByTestId("budget-over-badge")).toHaveCount(0);
+  });
+
+  test("shows the over-budget state; income doesn't reduce spending", async ({
+    page,
+  }) => {
+    const { today } = utcDates();
+    await addBudget(page, "Transport", "100");
+    await addTransaction(page, { date: today, amount: "150", category: "— Fuel" });
+    await addTransaction(page, {
+      date: today,
+      amount: "200",
+      category: "Transport",
+      income: true,
+    });
+
+    await openBudgets(page);
+    const row = rowFor(page, "Transport");
+    await expect(row.getByTestId("budget-spent")).toHaveText("150.00");
+    await expect(row.getByTestId("budget-left")).toHaveText("Over by 50.00 PLN");
+    await expect(row.getByTestId("budget-over-badge")).toHaveText("Over budget");
+    await expect(row).toHaveAttribute("data-state", "over");
+  });
+
+  test("at exactly the limit, a budget is close but not over", async ({
+    page,
+  }) => {
+    const { today } = utcDates();
+    await addBudget(page, "Shopping", "100");
+    await addTransaction(page, { date: today, amount: "100", category: "— Clothing" });
+
+    await openBudgets(page);
+    const row = rowFor(page, "Shopping");
+    await expect(row.getByTestId("budget-left")).toHaveText("0.00 PLN");
+    await expect(row).toHaveAttribute("data-state", "near");
+    await expect(row.getByTestId("budget-over-badge")).toHaveCount(0);
+  });
+
+  test("counts only the current month", async ({ page }) => {
+    const { previousMonth, now } = utcDates();
+    await addBudget(page, "Health", "100");
+    await addTransaction(page, {
+      date: previousMonth,
+      amount: "80",
+      category: "Health",
+    });
+
+    await openBudgets(page);
+    const row = rowFor(page, "Health");
+    await expect(row.getByTestId("budget-spent")).toHaveText("0.00");
+    await expect(row.getByTestId("budget-left")).toHaveText("100.00 PLN");
+    const monthLabel = new Intl.DateTimeFormat("en", {
+      month: "long",
+      year: "numeric",
+      timeZone: "UTC",
+    }).format(now);
+    await expect(page.getByTestId("budgets-month")).toHaveText(
+      `Spending in ${monthLabel}`,
+    );
+  });
+});
+
 test.describe("Budgets", () => {
   test.beforeEach(async ({ page, signedInUser: _signedInUser }) => {
     await page.goto("/budgets");
