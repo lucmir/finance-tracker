@@ -129,10 +129,12 @@ count toward a budget.
 One PR per step. Each step is merged before the next one branches from
 `main` (no stacked PRs), and every merge leaves `main` shippable: user data
 never exists without its compliance handling, and `pnpm run check` passes.
+Rows are in execution order; step IDs never change once assigned.
 
 | Step | PR title | Delivers | Depends on | Status |
 | --- | --- | --- | --- | --- |
-| S0 | `docs: add budgets plan` | — | — | todo |
+| S0 | `docs: add budgets plan` | — | — | done (#2) |
+| S9 | `chore(seed): add demo user seed for local testing` | — | S0 | in review |
 | S1 | `fix(receipts): store scanned receipts as expenses` | D9, T5 | S0 | todo |
 | S2 | `feat(budgets): add budgets data model` | T9, T10 (D4) | S0 | todo |
 | S3 | `feat(budgets): add budgets page` | T1, T2 | S2 | todo |
@@ -154,6 +156,9 @@ Conventions for every PR:
 Manual testing setups:
 - **Dev:** `AI_FAKE=1 pnpm run dev` → http://127.0.0.1:3000. Uses your
   persistent database in `./data/pg`; emails are printed in the terminal.
+  Log in as the demo user (`demo@example.com` / `demo-password`), created
+  with `pnpm run seed:demo` (`--reset` to rebuild it) while the dev server is
+  stopped.
 - **Test mode:** `TEST_MODE=1 AI_FAKE=1 pnpm run dev`. In-memory database
   (create a user at `/setup`), emails readable at `/test-emails`, plan switch
   via `fetch('/test-set-plan?plan=pro', { method: 'POST' })` in the browser
@@ -162,6 +167,24 @@ Manual testing setups:
 
 ### S0. Commit the plan
 This file. Reviewed as text; nothing to test.
+
+### S9. Demo seed for local testing
+- `pnpm run seed:demo [--reset]` creates a dedicated, email-verified demo
+  user with the default categories plus a third-level one (Entertainment ›
+  Dining Out › Coffee), two accounts, and about three months of transactions
+  dated relative to today (UTC): income, a refund, uncategorized expenses,
+  and rows on the last day of the previous month and the first of this one.
+  `--reset` deletes the demo user through `hardDeleteUser` and rebuilds it;
+  no other user is touched. Refuses to run while port 3000 is in use.
+- Later steps extend it: S3 adds sample budgets, and from S4 the data gives
+  one budget under, one close to, and one over its limit.
+- Tests: unit tests for dates, month boundaries, the refund, the third-level
+  category, and reset only replacing the demo user.
+- Manual: stop the dev server → `pnpm run seed:demo` prints the login and
+  counts (running it again without `--reset` refuses) → start the dev server
+  and log in as the demo user. Dashboard shows three months; Transactions has
+  this month's refund and uncategorized rows; Categories shows Coffee under
+  Dining Out.
 
 ### S1. Store scanned receipts as expenses (D9)
 - `saveReceiptAndLink` stores a new receipt transaction as `-abs(total)`.
