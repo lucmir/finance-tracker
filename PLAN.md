@@ -21,7 +21,7 @@ they deliver (e.g. `Delivers: T2, T5`).
 
 ## Design decisions
 
-All decisions confirmed on 2026-11-20. The chosen option is marked
+All decisions confirmed on 2026-11-20 (D10 added during S3). The chosen option is marked
 *Decided*; the others are kept for context.
 
 | ID | Decision |
@@ -35,6 +35,7 @@ All decisions confirmed on 2026-11-20. The chosen option is marked
 | D7 | One budget per category; parent and child budgets count independently; positive limit in minor units, single currency |
 | D8 | After a downgrade, existing budgets keep working; creating new ones is blocked until under the limit |
 | D9 | Fix scanned receipts being stored as income, in its own PR before the budget calculation |
+| D10 | A subcategory budget may be higher than its parent's (or a parent lower than a subcategory's); the dialog shows a non-blocking warning |
 
 **D1. When the over-budget check runs (T7).** Spending changes in 9 server
 functions: `createTransaction`, `updateTransaction`, `deleteTransaction`,
@@ -117,6 +118,15 @@ count toward a budget.
   `-abs(total)` server-side, plus a test. Existing rows with `source =
   'receipt'` and a positive amount can be flipped by a one-off data migration.
 - (b) Leave it and document that scanned receipts don't count.
+
+**D10. Subcategory budget above its parent's (T2, T4).** Found while
+reviewing S3. Because a parent's spending includes its subcategories, the
+parent always goes over first, so the child's higher limit can't be reached
+before then. *Decided:* allow it (no restriction, which would also make the
+order of edits matter) and show a non-blocking warning in the dialog, live as
+the limit is typed, in both directions: a subcategory limit above any
+ancestor's budget, and a parent limit below a subcategory's. Not warned:
+subcategory budgets whose sum exceeds the parent's (a normal way to plan).
 
 ## Out of scope
 
@@ -239,7 +249,7 @@ This file. Reviewed as text; nothing to test.
 - Route `src/routes/_authed/budgets.tsx` with TanStack Query; "Budgets" in the
   sidebar. List (category with color, limit), empty state, add dialog
   (category picker showing the tree, limit input), edit-limit dialog, delete
-  confirmation. Progress columns come in S4.
+  confirmation, and the D10 warning. Progress columns come in S4.
 - Tests: E2E for navigation, add/edit/delete, validation (empty, zero,
   negative limit; duplicate category), empty state, and deleting a category
   removing its budget.
