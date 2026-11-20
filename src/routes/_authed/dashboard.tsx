@@ -361,14 +361,9 @@ function Dashboard() {
 
       {/* Main Content */}
       <main className="page-wrap py-8 space-y-8">
-        {/* Budgets this month sit above the filters: they're always the
-            current month across all accounts, so the filters (which apply
-            to everything below them) don't affect them. */}
-        <BudgetsSummaryCard />
-
         <section
           aria-labelledby="dashboard-overview-title"
-          className="space-y-6 border-t border-line/50 pt-8"
+          className="space-y-6"
         >
           <h2 id="dashboard-overview-title" className="text-base font-semibold">
             {m.dashboard_overview_title()}
@@ -442,6 +437,12 @@ function Dashboard() {
             </div>
           )}
         </section>
+
+        {/* Budgets are always the current month across all accounts, so the
+            filters above don't apply to them; the section's hint says so. */}
+        <div className="border-t border-line/50 pt-8">
+          <BudgetsSummaryCard />
+        </div>
       </main>
     </div>
   );

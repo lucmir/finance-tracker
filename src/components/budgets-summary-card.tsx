@@ -44,8 +44,8 @@ export function BudgetsSummaryCard() {
     queryFn: () => getBudgetsFn(),
   });
   if (!data) {
-    // Hold the section's place while loading, so the filters below it don't
-    // jump when the budgets arrive.
+    // Hold the section's place while loading, so the page doesn't jump when
+    // the budgets arrive.
     return (
       <section aria-labelledby="dashboard-budgets-title" className="space-y-3" aria-busy="true">
         <h2 id="dashboard-budgets-title" className="text-base font-semibold">
