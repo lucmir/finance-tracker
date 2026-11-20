@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { db, schema } from "../src/db/index.ts";
 import {
   checkAccountLimit,
+  checkBudgetLimit,
   entitlementsForPlan,
   getEntitlements,
   getSubscription,
@@ -22,6 +23,7 @@ import {
   verifyStripeSignature,
 } from "../src/server/stripe.server.ts";
 import { env } from "../src/server/env.ts";
+import { createBudget, listBudgets } from "../src/server/budgets.server.ts";
 
 describe("billing entitlements and webhook processing", () => {
   const userId = "billing-test-user";
@@ -53,6 +55,10 @@ describe("billing entitlements and webhook processing", () => {
     await db.delete(schema.stripe_events);
     await db.delete(schema.ai_usage);
     await db.delete(schema.accounts).where(eq(schema.accounts.user_id, userId));
+    await db.delete(schema.budgets).where(eq(schema.budgets.user_id, userId));
+    await db
+      .delete(schema.categories)
+      .where(eq(schema.categories.user_id, userId));
     await db.delete(schema.users).where(eq(schema.users.id, userId));
   });
 
@@ -60,11 +66,13 @@ describe("billing entitlements and webhook processing", () => {
     expect(entitlementsForPlan("free")).toEqual({
       plan: "free",
       maxAccounts: env.billing.freeMaxAccounts,
+      maxBudgets: env.billing.freeMaxBudgets,
       scansPerMonth: env.ai.freeScansPerMonth,
     });
     expect(entitlementsForPlan("pro")).toEqual({
       plan: "pro",
       maxAccounts: null,
+      maxBudgets: null,
       scansPerMonth: env.billing.proScansPerMonth,
     });
   });
@@ -107,6 +115,37 @@ describe("billing entitlements and webhook processing", () => {
     // accounts above the free limit stay usable after any downgrade.
     await setSubscription("pro", "active");
     expect((await checkAccountLimit(userId, db)).allowed).toBe(true);
+  });
+
+  it("limits budgets on the free plan; pro is unlimited; a downgrade keeps existing budgets (D8)", async () => {
+    const max = env.billing.freeMaxBudgets;
+    const categoryIds = Array.from({ length: max + 2 }, (_, i) => `billing-cat-${i}`);
+    for (const id of categoryIds) {
+      await db.insert(schema.categories).values({ id, user_id: userId, name: id });
+    }
+    const add = (i: number) =>
+      createBudget(userId, { categoryId: categoryIds[i], limitMinor: 1000 });
+
+    for (let i = 0; i < max; i++) expect(await add(i)).toHaveProperty("id");
+    expect(await add(max)).toMatchObject({
+      code: "budget_limit_reached",
+      limit: max,
+    });
+    const blocked = await checkBudgetLimit(userId, db);
+    expect(blocked).toMatchObject({ allowed: false, limit: max });
+
+    // Pro: unlimited.
+    await setSubscription("pro", "active");
+    expect((await checkBudgetLimit(userId, db)).allowed).toBe(true);
+    expect(await add(max)).toHaveProperty("id");
+
+    // Canceled → free again: every budget is kept, new ones are blocked.
+    await db
+      .update(schema.subscriptions)
+      .set({ plan: "free", status: "canceled" })
+      .where(eq(schema.subscriptions.user_id, userId));
+    expect(await listBudgets(userId)).toHaveLength(max + 1);
+    expect(await add(max + 1)).toMatchObject({ code: "budget_limit_reached" });
   });
 
   it("scan quota and usage summary follow the plan", async () => {

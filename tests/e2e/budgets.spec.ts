@@ -357,3 +357,66 @@ test.describe("Budgets", () => {
     await expect(budgetRows(page)).toContainText("Transport");
   });
 });
+
+test.describe("Budget limit on the Free plan", () => {
+  test.beforeEach(async ({ page, signedInUser: _signedInUser }) => {
+    await openBudgets(page);
+  });
+
+  test("allows 3 budgets on Free, then blocks adding with an upgrade link", async ({
+    page,
+  }) => {
+    await expect(page.getByTestId("budgets-plan-usage")).toHaveText(
+      "0 of 3 budgets on the Free plan.",
+    );
+    await addBudget(page, "Groceries", "400");
+    await addBudget(page, "Transport", "300");
+    await addBudget(page, "Health", "100");
+
+    await expect(page.getByTestId("budgets-plan-usage")).toHaveText(
+      "3 of 3 budgets on the Free plan.",
+    );
+    await expect(page.getByRole("button", { name: "Add Budget" })).toBeDisabled();
+    const notice = page.getByTestId("budget-limit-notice");
+    await expect(notice).toContainText(
+      "The Free plan includes up to 3 budgets. Upgrade to Pro for unlimited budgets.",
+    );
+    await notice.getByRole("link", { name: "Upgrade to Pro" }).click();
+    await expect(page).toHaveURL("/billing");
+    await expect(page.getByTestId("billing-budgets-usage")).toHaveText(
+      "3 of 3 budgets",
+    );
+  });
+
+  test("Pro is unlimited; a downgrade keeps every budget but blocks new ones", async ({
+    page,
+  }) => {
+    await page.request.post("/test-set-plan?plan=pro");
+    await openBudgets(page);
+    await expect(page.getByTestId("budgets-plan-usage")).toHaveCount(0);
+    for (const [category, limit] of [
+      ["Groceries", "400"],
+      ["Transport", "300"],
+      ["Health", "100"],
+      ["Shopping", "200"],
+    ]) {
+      await addBudget(page, category, limit);
+    }
+    await expect(budgetRows(page)).toHaveCount(4);
+    await expect(page.getByTestId("budget-limit-notice")).toHaveCount(0);
+
+    await page.request.post("/test-set-plan?plan=free&status=canceled");
+    await openBudgets(page);
+    await expect(budgetRows(page)).toHaveCount(4);
+    await expect(page.getByTestId("budgets-plan-usage")).toHaveText(
+      "4 of 3 budgets on the Free plan.",
+    );
+    await expect(page.getByRole("button", { name: "Add Budget" })).toBeDisabled();
+    await expect(page.getByTestId("budget-limit-notice")).toBeVisible();
+
+    await page.goto("/billing");
+    await expect(page.getByTestId("billing-budgets-usage")).toHaveText(
+      "4 of 3 budgets",
+    );
+  });
+});

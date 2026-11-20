@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
@@ -86,8 +86,14 @@ function parseLimit(raw: string): { minor: number } | { message: string } {
 }
 
 /** Maps a server result's error code to a translated message. */
-function errorMessage(result: { error?: string; code?: string }): string {
+function errorMessage(result: {
+  error?: string;
+  code?: string;
+  limit?: number;
+}): string {
   switch (result.code) {
+    case "budget_limit_reached":
+      return m.budget_limit_reached({ limit: result.limit ?? 0 });
     case "budget_exists":
       return m.budget_exists();
     case "category_not_found":
@@ -482,6 +488,10 @@ function BudgetsPage() {
     staleTime: 0,
   });
   const budgets = useMemo(() => data?.budgets ?? [], [data]);
+  // Free plan limit (T8). Budgets above it after a downgrade are kept; only
+  // adding is blocked (D8).
+  const maxBudgets = data?.maxBudgets ?? null;
+  const atLimit = maxBudgets !== null && budgets.length >= maxBudgets;
   const { data: categories = [] } = useQuery({
     queryKey: CATEGORIES_QUERY_KEY,
     queryFn: () => getCategoriesFn(),
@@ -593,8 +603,20 @@ function BudgetsPage() {
                 </>
               )}
             </p>
+            {/* At the limit, the callout below carries this line instead. */}
+            {maxBudgets !== null && !atLimit && (
+              <p
+                className="text-xs text-muted-foreground mt-0.5"
+                data-testid="budgets-plan-usage"
+              >
+                {m.budgets_plan_usage({
+                  used: budgets.length,
+                  limit: maxBudgets,
+                })}
+              </p>
+            )}
           </div>
-          <Button onClick={openAdd}>
+          <Button onClick={openAdd} disabled={atLimit}>
             <svg
               className="size-4"
               fill="none"
@@ -614,6 +636,48 @@ function BudgetsPage() {
       </header>
 
       <main className="page-wrap py-8">
+        {atLimit && (
+          <div
+            className="mb-4 flex flex-col gap-3 rounded-xl border border-(--lagoon)/40 bg-(--lagoon)/10 p-4 sm:flex-row sm:items-center"
+            role="status"
+            data-testid="budget-limit-notice"
+          >
+            <svg
+              className="size-5 shrink-0 text-(--lagoon-deep)"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.8}
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z"
+              />
+            </svg>
+            <div className="flex-1 text-sm">
+              <p className="font-semibold" data-testid="budgets-plan-usage">
+                {m.budgets_plan_usage({
+                  used: budgets.length,
+                  limit: maxBudgets ?? 0,
+                })}
+              </p>
+              <p className="text-muted-foreground">
+                {m.budget_limit_reached({ limit: maxBudgets ?? 0 })}
+              </p>
+            </div>
+            {/* `!`: the global unlayered `a { color }` rule in styles.css
+                would otherwise override the button's text color. */}
+            <Button
+              asChild
+              size="sm"
+              className="self-start text-primary-foreground! hover:text-primary-foreground! sm:self-auto"
+            >
+              <Link to="/billing">{m.billing_upgrade()}</Link>
+            </Button>
+          </div>
+        )}
         {isLoading ? (
           <div className="flex items-center justify-center py-16">
             <div className="flex flex-col items-center gap-3">

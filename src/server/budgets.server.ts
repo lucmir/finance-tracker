@@ -1,5 +1,6 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db, schema } from "#/db";
+import { checkBudgetLimit } from "#/server/billing.server";
 import { ownedEntityExists } from "#/server/ownership.server";
 
 //
@@ -11,17 +12,23 @@ import { ownedEntityExists } from "#/server/ownership.server";
 export type BudgetErrorCode =
   | "category_not_found"
   | "budget_exists"
-  | "budget_not_found";
+  | "budget_not_found"
+  | "budget_limit_reached";
 
-export type BudgetError = { error: string; code: BudgetErrorCode };
+export type BudgetError = {
+  error: string;
+  code: BudgetErrorCode;
+  /** The plan's budget limit, for `budget_limit_reached`. */
+  limit?: number;
+};
 
-const ERROR_MESSAGES: Record<BudgetErrorCode, string> = {
+const ERROR_MESSAGES: Record<Exclude<BudgetErrorCode, "budget_limit_reached">, string> = {
   category_not_found: "Category does not exist",
   budget_exists: "This category already has a budget",
   budget_not_found: "Budget not found",
 };
 
-const fail = (code: BudgetErrorCode): BudgetError => ({
+const fail = (code: keyof typeof ERROR_MESSAGES): BudgetError => ({
   error: ERROR_MESSAGES[code],
   code,
 });
@@ -171,11 +178,18 @@ export async function listBudgets(
     );
 }
 
-/** Creates a budget on one of the user's categories (one per category). */
+/**
+ * Creates a budget on one of the user's categories (one per category),
+ * within the plan's budget limit (T8).
+ */
 export async function createBudget(
   userId: string,
   input: { categoryId: string; limitMinor: number },
 ): Promise<{ id: string } | BudgetError> {
+  const limit = await checkBudgetLimit(userId);
+  if (!limit.allowed) {
+    return { error: limit.error, code: limit.code, limit: limit.limit };
+  }
   if (!(await ownedEntityExists("category", userId, input.categoryId))) {
     return fail("category_not_found");
   }

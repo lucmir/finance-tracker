@@ -318,7 +318,7 @@
   "billing_not_configured": "Payments are not configured on this deployment, so plan upgrades are unavailable.",
   "billing_checkout_success": "Thanks! Your payment went through — your plan will update within a few seconds.",
   "billing_checkout_cancelled": "Checkout was cancelled. You have not been charged.",
-  "billing_free_blurb": "Manual tracking and statement imports are free forever. Pro adds more receipt scans and unlimited accounts.",
+  "billing_free_blurb": "Manual tracking and statement imports are free forever. Pro adds more receipt scans, unlimited accounts and unlimited budgets.",
   "billing_pro_blurb": "Thanks for supporting Finance Tracker! You have unlimited accounts and an increased scan quota.",
   "account_limit_reached": "The free plan is limited to {limit} accounts. Upgrade to Pro for unlimited accounts.",
   "email_password_changed_subject": "Your password was changed — Finance Tracker",
@@ -434,5 +434,9 @@
   "budget_over_badge": "Over budget",
   "budget_progress_label": "{percent}% of the monthly limit spent",
   "email_budget_exceeded_subject": "Budget exceeded: {category} — Finance Tracker",
-  "email_budget_exceeded_body": "You've spent {spent} this month in {category}, over your monthly budget of {limit}.\n\nSee your budgets: {link}\n\nYou get at most one of these emails per budget each month."
+  "email_budget_exceeded_body": "You've spent {spent} this month in {category}, over your monthly budget of {limit}.\n\nSee your budgets: {link}\n\nYou get at most one of these emails per budget each month.",
+  "budgets_plan_usage": "{used} of {limit} budgets on the Free plan.",
+  "budget_limit_reached": "The Free plan includes up to {limit} budgets. Upgrade to Pro for unlimited budgets.",
+  "billing_budgets_usage": "{used} of {limit} budgets",
+  "billing_budgets_unlimited": "{used} budgets (unlimited)"
 }
