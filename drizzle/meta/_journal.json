@@ -29,6 +29,13 @@
       "when": 1783806144711,
       "tag": "0003_hesitant_clea",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795194435933,
+      "tag": "0004_receipt_transactions_as_expenses",
+      "breakpoints": true
     }
   ]
 }

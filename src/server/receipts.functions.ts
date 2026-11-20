@@ -514,14 +514,17 @@ export const saveReceiptAndLink = createServerFn({ method: "POST" })
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
         .trim();
-      const sourceRef = `${data.date}-${normalizedStore}-${formatMinor(data.totalMinor)}`;
+      const receiptTotalMinor = Math.abs(data.totalMinor);
+      const sourceRef = `${data.date}-${normalizedStore}-${formatMinor(receiptTotalMinor)}`;
 
       await db.insert(schema.transactions).values({
         id: txnId,
         user_id: userId,
         account_id: data.accountId,
         date: data.date,
-        amount_minor: data.totalMinor,
+        // A receipt is a purchase: store it as an expense (negative), the
+        // app-wide sign convention. The client sends the total as printed.
+        amount_minor: -receiptTotalMinor,
         description: data.store_name || null,
         category_id: parentId,
         source: "receipt",

@@ -31,6 +31,18 @@ test.describe("Receipt Viewer", () => {
     await page.goto("/dashboard");
   });
 
+  test("saved receipt is recorded as an expense", async ({ page }) => {
+    await scanAndSaveReceipt(page);
+
+    await page.goto("/transactions");
+    const row = page
+      .getByRole("table")
+      .getByTestId("transaction-row")
+      .filter({ hasText: "FAKE_STORE" });
+    await expect(row).toContainText("− 36.99");
+    await expect(row).not.toContainText("+ 36.99");
+  });
+
   test("shows receipt indicator for receipt-backed transaction", async ({ page }) => {
     // First create a receipt
     await scanAndSaveReceipt(page);
