@@ -409,7 +409,6 @@
   "add_budget": "Add Budget",
   "no_budgets_yet": "No budgets yet",
   "create_first_budget": "Add a monthly limit for a category to start planning your spending.",
-  "budget_limit_column": "Monthly limit",
   "budget_category_label": "Category",
   "budget_category_placeholder": "Choose a category",
   "budget_limit_label": "Monthly limit ({currency})",
@@ -427,5 +426,11 @@
   "budget_not_found": "That budget no longer exists.",
   "budget_all_categories_used": "Every category already has a budget.",
   "budget_warning_above_parent": "This is higher than the {category} budget ({limit}). Spending here also counts toward {category}, so {category} will go over first.",
-  "budget_warning_below_child": "{category} has a higher budget ({limit}). It will only matter once this budget is over."
+  "budget_warning_below_child": "{category} has a higher budget ({limit}). It will only matter once this budget is over.",
+  "budgets_month": "Spending in {month}",
+  "budget_spent_limit_column": "Spent / limit",
+  "budget_left_column": "Left",
+  "budget_over_by": "Over by {amount}",
+  "budget_over_badge": "Over budget",
+  "budget_progress_label": "{percent}% of the monthly limit spent"
 }

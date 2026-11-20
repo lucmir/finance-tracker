@@ -161,8 +161,8 @@ Rows are in execution order; step IDs never change once assigned.
 | S9 | `chore(seed): add demo user seed for local testing` | — | S0 | done (#3) |
 | S1 | `fix(receipts): store scanned receipts as expenses` | D9, T5 | S0 | done (#4) |
 | S2 | `feat(budgets): add budgets data model` | T9, T10 (D4) | S0 | done (#5) |
-| S3 | `feat(budgets): add budgets page` | T1, T2 | S2 | in review |
-| S4 | `feat(budgets): show monthly progress` | T3, T4, T5, T6 | S1, S3 | todo |
+| S3 | `feat(budgets): add budgets page` | T1, T2 | S2 | done (#8) |
+| S4 | `feat(budgets): show monthly progress` | T3, T4, T5, T6 | S1, S3 | in review |
 | S5 | `feat(budgets): email when a budget is exceeded` | T7 | S4 | todo |
 | S6 | `feat(billing): limit budgets on the free plan` | T8 | S3 | todo |
 | S7 | `docs: document architecture and budgets in the README` | T10, T11 | S5, S6 | todo |

@@ -3,6 +3,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { m } from "#/paraglide/messages";
+import { getLocale } from "#/paraglide/runtime";
+import { cn } from "#/lib/utils";
 import { formatMinor, parseAmountToMinor } from "#/lib/money";
 import { MAX_BUDGET_LIMIT_MINOR } from "#/lib/budget-limits";
 import { findHierarchyConflict } from "#/lib/budget-hierarchy";
@@ -41,7 +43,7 @@ export const Route = createFileRoute("/_authed/budgets")({
   component: BudgetsPage,
 });
 
-type Budget = Awaited<ReturnType<typeof getBudgets>>[number];
+type Budget = Awaited<ReturnType<typeof getBudgets>>["budgets"][number];
 type Category = Awaited<ReturnType<typeof getCategories>>[number];
 
 const BUDGETS_QUERY_KEY = ["budgets"] as const;
@@ -102,6 +104,33 @@ const formatLimit = (minor: number) =>
 
 // --- Row ---
 
+/** Share of the limit at which a budget is shown as close to it. */
+const NEAR_LIMIT_RATIO = 0.8;
+
+type BudgetState = "under" | "near" | "over";
+
+function budgetState(budget: Budget): BudgetState {
+  if (budget.over) return "over";
+  return budget.spent_minor >= budget.limit_minor * NEAR_LIMIT_RATIO
+    ? "near"
+    : "under";
+}
+
+const BAR_COLOR: Record<BudgetState, string> = {
+  under: "bg-emerald-500",
+  near: "bg-amber-500",
+  over: "bg-destructive",
+};
+
+/** "2026-11" → "November 2026" in the current locale. */
+function formatMonth(month: string): string {
+  return new Intl.DateTimeFormat(getLocale(), {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(`${month}-01T00:00:00Z`));
+}
+
 function BudgetRowItem({
   budget,
   onEdit,
@@ -112,31 +141,78 @@ function BudgetRowItem({
   onDelete: (budget: Budget) => void;
 }) {
   const parents = budget.category_path.slice(0, -1);
+  const state = budgetState(budget);
+  const percent = Math.round((budget.spent_minor * 100) / budget.limit_minor);
   return (
+    // Narrow screens: a card (name + actions, then the bar, then amounts).
+    // From md up: one table row. The amounts wrapper becomes
+    // `display: contents` there, so its two children are columns again.
     <div
-      className="flex items-center gap-3 px-3 py-2.5 hover:bg-accent/50 transition-colors"
+      className="flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-3 hover:bg-accent/50 transition-colors md:flex-nowrap"
       role="row"
       data-testid="budget-row"
+      data-state={state}
     >
       <span
-        className="size-4 shrink-0 rounded-full border border-border/50 shadow-sm"
+        className="order-1 size-4 shrink-0 rounded-full border border-border/50 shadow-sm"
         style={{ backgroundColor: budget.category_color }}
       />
-      <span className="flex-1 text-sm truncate" data-testid="budget-category">
-        {parents.length > 0 && (
-          <span className="text-muted-foreground">
-            {parents.join(" › ")} ›{" "}
+      <div className="order-2 min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 md:flex-nowrap">
+          <span
+            className="min-w-0 break-words text-sm md:truncate"
+            data-testid="budget-category"
+          >
+            {parents.length > 0 && (
+              <span className="text-muted-foreground">
+                {parents.join(" › ")} ›{" "}
+              </span>
+            )}
+            <span className="font-medium">{budget.category_name}</span>
           </span>
-        )}
-        <span className="font-medium">{budget.category_name}</span>
-      </span>
-      <span
-        className="w-36 text-right text-sm tabular-nums"
-        data-testid="budget-limit"
-      >
-        {formatLimit(budget.limit_minor)}
-      </span>
-      <div className="flex items-center gap-1 w-32 justify-end">
+          {state === "over" && (
+            <span
+              className="shrink-0 rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive"
+              data-testid="budget-over-badge"
+            >
+              {m.budget_over_badge()}
+            </span>
+          )}
+        </div>
+        <div
+          className="mt-1.5 h-1.5 max-w-md overflow-hidden rounded-full bg-muted"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.min(percent, 100)}
+          aria-label={m.budget_progress_label({ percent })}
+          data-testid="budget-progress"
+        >
+          <div
+            className={cn("h-full rounded-full", BAR_COLOR[state])}
+            style={{ width: `${Math.min(percent, 100)}%` }}
+          />
+        </div>
+      </div>
+      <div className="order-4 flex w-full items-baseline justify-between gap-3 pl-7 text-sm tabular-nums md:contents">
+        <span className="whitespace-nowrap md:order-3 md:w-48 md:shrink-0 md:text-right">
+          <span data-testid="budget-spent">{formatMinor(budget.spent_minor)}</span>
+          <span className="text-muted-foreground"> / </span>
+          <span data-testid="budget-limit">{formatLimit(budget.limit_minor)}</span>
+        </span>
+        <span
+          className={cn(
+            "whitespace-nowrap text-right md:order-4 md:w-36 md:shrink-0",
+            budget.over && "font-medium text-destructive",
+          )}
+          data-testid="budget-left"
+        >
+          {budget.over
+            ? m.budget_over_by({ amount: formatLimit(-budget.left_minor) })
+            : formatLimit(budget.left_minor)}
+        </span>
+      </div>
+      <div className="order-3 flex shrink-0 items-center justify-end gap-1 md:order-5 md:w-32">
         <EditButton onClick={() => onEdit(budget)} data-testid="edit-budget" />
         <DeleteButton
           onClick={() => onDelete(budget)}
@@ -399,12 +475,13 @@ function BudgetsPage() {
   const updateBudgetFn = useServerFn(updateBudget);
   const deleteBudgetFn = useServerFn(deleteBudget);
 
-  const { data: budgets = [], isLoading } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: BUDGETS_QUERY_KEY,
     queryFn: () => getBudgetsFn(),
     refetchOnMount: true,
     staleTime: 0,
   });
+  const budgets = useMemo(() => data?.budgets ?? [], [data]);
   const { data: categories = [] } = useQuery({
     queryKey: CATEGORIES_QUERY_KEY,
     queryFn: () => getCategoriesFn(),
@@ -507,6 +584,14 @@ function BudgetsPage() {
             </h1>
             <p className="text-sm text-muted-foreground mt-0.5">
               {m.budgets_subtitle()}
+              {data?.month && (
+                <>
+                  {" "}
+                  <span data-testid="budgets-month">
+                    {m.budgets_month({ month: formatMonth(data.month) })}
+                  </span>
+                </>
+              )}
             </p>
           </div>
           <Button onClick={openAdd}>
@@ -548,10 +633,13 @@ function BudgetsPage() {
           </div>
         ) : (
           <div className="island-shell rounded-xl overflow-hidden">
-            <div className="flex items-center gap-3 px-3 py-2 bg-muted/40 border-b border-line/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <div className="hidden items-center gap-3 px-3 py-2 bg-muted/40 border-b border-line/50 text-xs font-semibold text-muted-foreground uppercase tracking-wider md:flex">
               <span className="size-4 shrink-0" aria-hidden="true" />
               <span className="flex-1">{m.category_column()}</span>
-              <span className="w-36 text-right">{m.budget_limit_column()}</span>
+              <span className="w-48 shrink-0 text-right">
+                {m.budget_spent_limit_column()}
+              </span>
+              <span className="w-36 shrink-0 text-right">{m.budget_left_column()}</span>
               <span className="w-32 text-right">{m.actions_column()}</span>
             </div>
             <div className="divide-y divide-line/30">

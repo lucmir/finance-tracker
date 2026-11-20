@@ -1,4 +1,4 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { db, schema } from "#/db";
 import { ownedEntityExists } from "#/server/ownership.server";
 
@@ -34,13 +34,88 @@ export interface BudgetRow {
   /** Names from the top-level category down to this one. */
   category_path: string[];
   limit_minor: number;
+  /** Spending this month in the category and all its subcategories. */
+  spent_minor: number;
+  /** limit − spent; negative when over. */
+  left_minor: number;
+  /** Over budget means spent > limit; exactly at the limit is not over (D5). */
+  over: boolean;
   created_at: Date;
   updated_at: Date;
 }
 
-/** The user's budgets, with each category's full path, ordered by path. */
-export async function listBudgets(userId: string): Promise<BudgetRow[]> {
-  const [budgets, categories] = await Promise.all([
+export interface BudgetMonth {
+  /** "YYYY-MM" */
+  month: string;
+  /** First day of the month, "YYYY-MM-DD" (inclusive). */
+  start: string;
+  /** First day of the next month, "YYYY-MM-DD" (exclusive). */
+  end: string;
+}
+
+/**
+ * The calendar month containing `now`, in UTC (decision D3), like the AI
+ * scan quota. Transaction dates are calendar dates, so this only matters on
+ * the first and last day of a month.
+ */
+export function budgetMonth(now: Date): BudgetMonth {
+  const y = now.getUTCFullYear();
+  const m = now.getUTCMonth();
+  const iso = (d: Date) => d.toISOString().slice(0, 10);
+  return {
+    month: iso(new Date(Date.UTC(y, m, 1))).slice(0, 7),
+    start: iso(new Date(Date.UTC(y, m, 1))),
+    end: iso(new Date(Date.UTC(y, m + 1, 1))),
+  };
+}
+
+/**
+ * Spending this month per budget, in minor units (positive). For each
+ * budget: its category and every descendant (any depth, via a recursive CTE;
+ * UNION dedups rows, so a cycle in parent_id can't loop forever), expenses
+ * only (amount_minor < 0, so income and refunds never reduce it), counted by
+ * the transaction's own category (decision D2), dated within the UTC month.
+ * Budgets without spending are included with 0.
+ */
+export async function spentByBudget(
+  userId: string,
+  now: Date = new Date(),
+): Promise<Map<string, number>> {
+  const { start, end } = budgetMonth(now);
+  const result = await db.execute(sql`
+    WITH RECURSIVE budget_tree (budget_id, category_id) AS (
+      SELECT b.id, b.category_id
+      FROM ${schema.budgets} b
+      WHERE b.user_id = ${userId}
+      UNION
+      SELECT bt.budget_id, c.id
+      FROM budget_tree bt
+      JOIN ${schema.categories} c
+        ON c.parent_id = bt.category_id AND c.user_id = ${userId}
+    )
+    SELECT bt.budget_id, COALESCE(SUM(-t.amount_minor), 0)::bigint AS spent
+    FROM budget_tree bt
+    LEFT JOIN ${schema.transactions} t
+      ON t.category_id = bt.category_id
+      AND t.user_id = ${userId}
+      AND t.amount_minor < 0
+      AND t.date >= ${start}::date
+      AND t.date < ${end}::date
+    GROUP BY bt.budget_id
+  `);
+  const rows = result.rows as Array<{ budget_id: string; spent: string | number }>;
+  return new Map(rows.map((r) => [r.budget_id, Number(r.spent)]));
+}
+
+/**
+ * The user's budgets, with each category's full path and this month's
+ * progress, ordered by path.
+ */
+export async function listBudgets(
+  userId: string,
+  now: Date = new Date(),
+): Promise<BudgetRow[]> {
+  const [budgets, categories, spent] = await Promise.all([
     db
       .select()
       .from(schema.budgets)
@@ -54,6 +129,7 @@ export async function listBudgets(userId: string): Promise<BudgetRow[]> {
       })
       .from(schema.categories)
       .where(eq(schema.categories.user_id, userId)),
+    spentByBudget(userId, now),
   ]);
 
   const byId = new Map(categories.map((c) => [c.id, c]));
@@ -75,6 +151,7 @@ export async function listBudgets(userId: string): Promise<BudgetRow[]> {
   return budgets
     .map((b) => {
       const category = byId.get(b.category_id);
+      const spentMinor = spent.get(b.id) ?? 0;
       return {
         id: b.id,
         category_id: b.category_id,
@@ -82,6 +159,9 @@ export async function listBudgets(userId: string): Promise<BudgetRow[]> {
         category_color: category?.color ?? "#6b7280",
         category_path: pathOf(b.category_id),
         limit_minor: b.limit_minor,
+        spent_minor: spentMinor,
+        left_minor: b.limit_minor - spentMinor,
+        over: spentMinor > b.limit_minor,
         created_at: b.created_at,
         updated_at: b.updated_at,
       };
