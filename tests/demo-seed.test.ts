@@ -95,6 +95,24 @@ describe("demo seed", () => {
     expect(txs.some((t) => t.category_id === coffee.id)).toBe(true);
   });
 
+  it("adds three sample budgets on top-level categories", async () => {
+    const budgets = await db
+      .select({
+        limit_minor: schema.budgets.limit_minor,
+        name: schema.categories.name,
+      })
+      .from(schema.budgets)
+      .innerJoin(
+        schema.categories,
+        eq(schema.budgets.category_id, schema.categories.id),
+      )
+      .where(eq(schema.budgets.user_id, result.userId));
+    expect(result.budgets).toBe(3);
+    expect(
+      Object.fromEntries(budgets.map((b) => [b.name, b.limit_minor])),
+    ).toEqual({ Groceries: 40000, Entertainment: 25000, Transport: 50000 });
+  });
+
   it("refuses to run again without reset", async () => {
     await expect(seedDemo({ now: NOW })).rejects.toBeInstanceOf(
       DemoUserExistsError,

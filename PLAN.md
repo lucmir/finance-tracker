@@ -21,7 +21,7 @@ they deliver (e.g. `Delivers: T2, T5`).
 
 ## Design decisions
 
-All decisions confirmed on 2026-11-20. The chosen option is marked
+All decisions confirmed on 2026-11-20 (D10 added during S3). The chosen option is marked
 *Decided*; the others are kept for context.
 
 | ID | Decision |
@@ -35,6 +35,7 @@ All decisions confirmed on 2026-11-20. The chosen option is marked
 | D7 | One budget per category; parent and child budgets count independently; positive limit in minor units, single currency |
 | D8 | After a downgrade, existing budgets keep working; creating new ones is blocked until under the limit |
 | D9 | Fix scanned receipts being stored as income, in its own PR before the budget calculation |
+| D10 | A subcategory budget may be higher than its parent's (or a parent lower than a subcategory's); the dialog shows a non-blocking warning |
 
 **D1. When the over-budget check runs (T7).** Spending changes in 9 server
 functions: `createTransaction`, `updateTransaction`, `deleteTransaction`,
@@ -118,6 +119,15 @@ count toward a budget.
   'receipt'` and a positive amount can be flipped by a one-off data migration.
 - (b) Leave it and document that scanned receipts don't count.
 
+**D10. Subcategory budget above its parent's (T2, T4).** Found while
+reviewing S3. Because a parent's spending includes its subcategories, the
+parent always goes over first, so the child's higher limit can't be reached
+before then. *Decided:* allow it (no restriction, which would also make the
+order of edits matter) and show a non-blocking warning in the dialog, live as
+the limit is typed, in both directions: a subcategory limit above any
+ancestor's budget, and a parent limit below a subcategory's. Not warned:
+subcategory budgets whose sum exceeds the parent's (a normal way to plan).
+
 ## Out of scope
 
 - Per-user time zones and currency conversion.
@@ -129,10 +139,12 @@ Existing issues, not caused by this work. Each would be its own PR if picked up.
 
 | ID | Issue | Found in |
 | --- | --- | --- |
-| F1 | Two flaky E2E tests: `categories.spec.ts:59` (strict-mode race on `getByText("Edit Me")`) and `import-dedup.spec.ts:27` (file-chooser timeout). Passed on rerun. | S9 CI |
+| F1 | Two flaky E2E tests: `categories.spec.ts:59` (strict-mode race on `getByText("Edit Me")`) and `import-dedup.spec.ts:27` (file-chooser timeout). Passed on rerun. Fixed in #7, together with a third race in the import specs. | S9 CI |
 | F2 | Scan Receipt can't create a new transaction once a match is suggested: any transaction on the same date counts as a match, editing the date doesn't refresh it, and the "Refresh match" message exists without a button. | S1 manual test |
 | F3 | The demo seed moves later-day entries of the current month to today, so today is crowded and scanning a receipt as the demo user always links (because of F2). | S1 manual test |
 | F4 | The CSP (`style-src 'self' 'unsafe-inline'`) blocks the Google Fonts stylesheet, so every page logs a console error and falls back to system fonts. | S1 manual test |
+| F5 | The Categories page hardcodes some English text instead of Paraglide messages: the page title and subtitle, "Choose how to handle them:" in the delete dialog, and the server's error strings. | S3 |
+| F6 | The category dialog only offers top-level categories as parents, so the UI can't create a third level, and editing a third-level category (e.g. the demo's Coffee) can't show its real parent. The data model and budgets support any depth. | S3 |
 
 ## Implementation plan
 
@@ -148,8 +160,8 @@ Rows are in execution order; step IDs never change once assigned.
 | S0 | `docs: add budgets plan` | — | — | done (#2) |
 | S9 | `chore(seed): add demo user seed for local testing` | — | S0 | done (#3) |
 | S1 | `fix(receipts): store scanned receipts as expenses` | D9, T5 | S0 | done (#4) |
-| S2 | `feat(budgets): add budgets data model` | T9, T10 (D4) | S0 | in review |
-| S3 | `feat(budgets): add budgets page` | T1, T2 | S2 | todo |
+| S2 | `feat(budgets): add budgets data model` | T9, T10 (D4) | S0 | done (#5) |
+| S3 | `feat(budgets): add budgets page` | T1, T2 | S2 | in review |
 | S4 | `feat(budgets): show monthly progress` | T3, T4, T5, T6 | S1, S3 | todo |
 | S5 | `feat(budgets): email when a budget is exceeded` | T7 | S4 | todo |
 | S6 | `feat(billing): limit budgets on the free plan` | T8 | S3 | todo |
@@ -237,7 +249,7 @@ This file. Reviewed as text; nothing to test.
 - Route `src/routes/_authed/budgets.tsx` with TanStack Query; "Budgets" in the
   sidebar. List (category with color, limit), empty state, add dialog
   (category picker showing the tree, limit input), edit-limit dialog, delete
-  confirmation. Progress columns come in S4.
+  confirmation, and the D10 warning. Progress columns come in S4.
 - Tests: E2E for navigation, add/edit/delete, validation (empty, zero,
   negative limit; duplicate category), empty state, and deleting a category
   removing its budget.

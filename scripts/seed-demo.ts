@@ -45,6 +45,7 @@ try {
   categories:   ${result.categories}
   accounts:     ${result.accounts}
   transactions: ${result.transactions} (${result.dateRange[0]} → ${result.dateRange[1]})
+  budgets:      ${result.budgets}
 
 Start the app with \`AI_FAKE=1 pnpm run dev\` and log in at http://127.0.0.1:3000`);
   process.exit(0);
