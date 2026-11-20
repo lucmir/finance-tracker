@@ -122,6 +122,41 @@ test.describe("Budget progress", () => {
     await expect(row.getByTestId("budget-over-badge")).toHaveCount(0);
   });
 
+  test("stays readable on a phone-sized screen", async ({ page }) => {
+    const { today } = utcDates();
+    await addBudget(page, "Groceries › Vegetables", "100");
+    await addTransaction(page, { date: today, amount: "150", category: "— Vegetables" });
+
+    await page.setViewportSize({ width: 375, height: 812 });
+    await openBudgets(page);
+    const row = rowFor(page, "Groceries › Vegetables");
+
+    // Every part of the row is on screen, with room to read it.
+    for (const testId of [
+      "budget-category",
+      "budget-over-badge",
+      "budget-progress",
+      "budget-spent",
+      "budget-left",
+      "edit-budget",
+    ]) {
+      await expect(row.getByTestId(testId), testId).toBeVisible();
+    }
+    const category = await row.getByTestId("budget-category").boundingBox();
+    expect(category?.width ?? 0).toBeGreaterThan(80);
+
+    // The badge and the amounts don't overlap.
+    const badge = await row.getByTestId("budget-over-badge").boundingBox();
+    const spent = await row.getByTestId("budget-spent").boundingBox();
+    expect(badge && spent && badge.y + badge.height <= spent.y).toBe(true);
+
+    // Nothing pushes the page wider than the screen.
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - window.innerWidth,
+    );
+    expect(overflow).toBeLessThanOrEqual(0);
+  });
+
   test("counts only the current month", async ({ page }) => {
     const { previousMonth, now } = utcDates();
     await addBudget(page, "Health", "100");
