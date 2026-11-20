@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import { m } from "#/paraglide/messages";
+import { BudgetsSummaryCard } from "#/components/budgets-summary-card";
 import { Select, SelectItem } from "#/components/ui/select";
 import { formatMinor } from "#/lib/money";
 import {
@@ -397,6 +398,9 @@ function Dashboard() {
                 accent="net"
               />
             </div>
+
+            {/* Budgets this month: ignores the period and account filters */}
+            <BudgetsSummaryCard />
 
             {/* Charts Row */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

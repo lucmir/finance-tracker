@@ -191,7 +191,7 @@ test.describe("Budgets", () => {
 
   test("is in the main navigation and starts empty", async ({ page }) => {
     await page.goto("/dashboard");
-    await page.getByRole("link", { name: "Budgets" }).click();
+    await page.getByRole("link", { name: "Budgets", exact: true }).click();
     await expect(page).toHaveURL("/budgets");
     await expect(page.getByTestId("budgets-empty")).toBeVisible();
     await expect(budgetRows(page)).toHaveCount(0);
@@ -351,7 +351,7 @@ test.describe("Budgets", () => {
       .click();
     await expect(page.getByRole("alertdialog")).toBeHidden();
 
-    await page.getByRole("link", { name: "Budgets" }).click();
+    await page.getByRole("link", { name: "Budgets", exact: true }).click();
     await expect(page).toHaveURL("/budgets");
     await expect(budgetRows(page)).toHaveCount(1);
     await expect(budgetRows(page)).toContainText("Transport");

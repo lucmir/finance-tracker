@@ -3,11 +3,12 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { m } from "#/paraglide/messages";
-import { getLocale } from "#/paraglide/runtime";
 import { cn } from "#/lib/utils";
 import { formatMinor, parseAmountToMinor } from "#/lib/money";
 import { MAX_BUDGET_LIMIT_MINOR } from "#/lib/budget-limits";
 import { findHierarchyConflict } from "#/lib/budget-hierarchy";
+import { budgetState, formatBudgetMonth } from "#/lib/budget-progress";
+import { BudgetProgressBar } from "#/components/budget-progress-bar";
 import { DeleteButton, EditButton } from "#/components/ui/action-buttons";
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
@@ -110,33 +111,6 @@ const formatLimit = (minor: number) =>
 
 // --- Row ---
 
-/** Share of the limit at which a budget is shown as close to it. */
-const NEAR_LIMIT_RATIO = 0.8;
-
-type BudgetState = "under" | "near" | "over";
-
-function budgetState(budget: Budget): BudgetState {
-  if (budget.over) return "over";
-  return budget.spent_minor >= budget.limit_minor * NEAR_LIMIT_RATIO
-    ? "near"
-    : "under";
-}
-
-const BAR_COLOR: Record<BudgetState, string> = {
-  under: "bg-emerald-500",
-  near: "bg-amber-500",
-  over: "bg-destructive",
-};
-
-/** "2026-11" → "November 2026" in the current locale. */
-function formatMonth(month: string): string {
-  return new Intl.DateTimeFormat(getLocale(), {
-    month: "long",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(new Date(`${month}-01T00:00:00Z`));
-}
-
 function BudgetRowItem({
   budget,
   onEdit,
@@ -148,7 +122,6 @@ function BudgetRowItem({
 }) {
   const parents = budget.category_path.slice(0, -1);
   const state = budgetState(budget);
-  const percent = Math.round((budget.spent_minor * 100) / budget.limit_minor);
   return (
     // Narrow screens: a card (name + actions, then the bar, then amounts).
     // From md up: one table row. The amounts wrapper becomes
@@ -185,20 +158,11 @@ function BudgetRowItem({
             </span>
           )}
         </div>
-        <div
-          className="mt-1.5 h-1.5 max-w-md overflow-hidden rounded-full bg-muted"
-          role="progressbar"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={Math.min(percent, 100)}
-          aria-label={m.budget_progress_label({ percent })}
+        <BudgetProgressBar
+          budget={budget}
+          className="mt-1.5 max-w-md"
           data-testid="budget-progress"
-        >
-          <div
-            className={cn("h-full rounded-full", BAR_COLOR[state])}
-            style={{ width: `${Math.min(percent, 100)}%` }}
-          />
-        </div>
+        />
       </div>
       <div className="order-4 flex w-full items-baseline justify-between gap-3 pl-7 text-sm tabular-nums md:contents">
         <span className="whitespace-nowrap md:order-3 md:w-48 md:shrink-0 md:text-right">
@@ -598,7 +562,7 @@ function BudgetsPage() {
                 <>
                   {" "}
                   <span data-testid="budgets-month">
-                    {m.budgets_month({ month: formatMonth(data.month) })}
+                    {m.budgets_month({ month: formatBudgetMonth(data.month) })}
                   </span>
                 </>
               )}
