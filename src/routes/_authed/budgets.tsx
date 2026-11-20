@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
@@ -86,8 +86,14 @@ function parseLimit(raw: string): { minor: number } | { message: string } {
 }
 
 /** Maps a server result's error code to a translated message. */
-function errorMessage(result: { error?: string; code?: string }): string {
+function errorMessage(result: {
+  error?: string;
+  code?: string;
+  limit?: number;
+}): string {
   switch (result.code) {
+    case "budget_limit_reached":
+      return m.budget_limit_reached({ limit: result.limit ?? 0 });
     case "budget_exists":
       return m.budget_exists();
     case "category_not_found":
@@ -482,6 +488,10 @@ function BudgetsPage() {
     staleTime: 0,
   });
   const budgets = useMemo(() => data?.budgets ?? [], [data]);
+  // Free plan limit (T8). Budgets above it after a downgrade are kept; only
+  // adding is blocked (D8).
+  const maxBudgets = data?.maxBudgets ?? null;
+  const atLimit = maxBudgets !== null && budgets.length >= maxBudgets;
   const { data: categories = [] } = useQuery({
     queryKey: CATEGORIES_QUERY_KEY,
     queryFn: () => getCategoriesFn(),
@@ -592,9 +602,20 @@ function BudgetsPage() {
                   </span>
                 </>
               )}
+              {maxBudgets !== null && (
+                <>
+                  {" "}
+                  <span data-testid="budgets-plan-usage">
+                    {m.budgets_plan_usage({
+                      used: budgets.length,
+                      limit: maxBudgets,
+                    })}
+                  </span>
+                </>
+              )}
             </p>
           </div>
-          <Button onClick={openAdd}>
+          <Button onClick={openAdd} disabled={atLimit}>
             <svg
               className="size-4"
               fill="none"
@@ -614,6 +635,21 @@ function BudgetsPage() {
       </header>
 
       <main className="page-wrap py-8">
+        {atLimit && (
+          <div
+            className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line/50 bg-accent/40 p-3 text-sm"
+            role="status"
+            data-testid="budget-limit-notice"
+          >
+            <span>{m.budget_limit_reached({ limit: maxBudgets ?? 0 })}</span>
+            <Link
+              to="/billing"
+              className="shrink-0 font-medium text-primary underline-offset-4 hover:underline"
+            >
+              {m.billing_upgrade()}
+            </Link>
+          </div>
+        )}
         {isLoading ? (
           <div className="flex items-center justify-center py-16">
             <div className="flex flex-col items-center gap-3">

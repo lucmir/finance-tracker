@@ -434,5 +434,9 @@
   "budget_over_badge": "Over budget",
   "budget_progress_label": "{percent}% of the monthly limit spent",
   "email_budget_exceeded_subject": "Budget exceeded: {category} — Finance Tracker",
-  "email_budget_exceeded_body": "You've spent {spent} this month in {category}, over your monthly budget of {limit}.\n\nSee your budgets: {link}\n\nYou get at most one of these emails per budget each month."
+  "email_budget_exceeded_body": "You've spent {spent} this month in {category}, over your monthly budget of {limit}.\n\nSee your budgets: {link}\n\nYou get at most one of these emails per budget each month.",
+  "budgets_plan_usage": "{used} of {limit} budgets on the Free plan.",
+  "budget_limit_reached": "The Free plan includes up to {limit} budgets. Upgrade to Pro for unlimited budgets.",
+  "billing_budgets_usage": "{used} of {limit} budgets",
+  "billing_budgets_unlimited": "{used} budgets (unlimited)"
 }
