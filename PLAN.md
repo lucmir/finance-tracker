@@ -135,8 +135,8 @@ Rows are in execution order; step IDs never change once assigned.
 | Step | PR title | Delivers | Depends on | Status |
 | --- | --- | --- | --- | --- |
 | S0 | `docs: add budgets plan` | — | — | done (#2) |
-| S9 | `chore(seed): add demo user seed for local testing` | — | S0 | in review |
-| S1 | `fix(receipts): store scanned receipts as expenses` | D9, T5 | S0 | todo |
+| S9 | `chore(seed): add demo user seed for local testing` | — | S0 | done (#3) |
+| S1 | `fix(receipts): store scanned receipts as expenses` | D9, T5 | S0 | in review |
 | S2 | `feat(budgets): add budgets data model` | T9, T10 (D4) | S0 | todo |
 | S3 | `feat(budgets): add budgets page` | T1, T2 | S2 | todo |
 | S4 | `feat(budgets): show monthly progress` | T3, T4, T5, T6 | S1, S3 | todo |
