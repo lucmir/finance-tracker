@@ -123,6 +123,17 @@ count toward a budget.
 - Per-user time zones and currency conversion.
 - Counting receipt items by their own category (D2 option b).
 
+## Follow-ups found along the way
+
+Existing issues, not caused by this work. Each would be its own PR if picked up.
+
+| ID | Issue | Found in |
+| --- | --- | --- |
+| F1 | Two flaky E2E tests: `categories.spec.ts:59` (strict-mode race on `getByText("Edit Me")`) and `import-dedup.spec.ts:27` (file-chooser timeout). Passed on rerun. | S9 CI |
+| F2 | Scan Receipt can't create a new transaction once a match is suggested: any transaction on the same date counts as a match, editing the date doesn't refresh it, and the "Refresh match" message exists without a button. | S1 manual test |
+| F3 | The demo seed moves later-day entries of the current month to today, so today is crowded and scanning a receipt as the demo user always links (because of F2). | S1 manual test |
+| F4 | The CSP (`style-src 'self' 'unsafe-inline'`) blocks the Google Fonts stylesheet, so every page logs a console error and falls back to system fonts. | S1 manual test |
+
 ## Implementation plan
 
 ### How the work is split
