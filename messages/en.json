@@ -318,7 +318,7 @@
   "billing_not_configured": "Payments are not configured on this deployment, so plan upgrades are unavailable.",
   "billing_checkout_success": "Thanks! Your payment went through — your plan will update within a few seconds.",
   "billing_checkout_cancelled": "Checkout was cancelled. You have not been charged.",
-  "billing_free_blurb": "Manual tracking and statement imports are free forever. Pro adds more receipt scans and unlimited accounts.",
+  "billing_free_blurb": "Manual tracking and statement imports are free forever. Pro adds more receipt scans, unlimited accounts and unlimited budgets.",
   "billing_pro_blurb": "Thanks for supporting Finance Tracker! You have unlimited accounts and an increased scan quota.",
   "account_limit_reached": "The free plan is limited to {limit} accounts. Upgrade to Pro for unlimited accounts.",
   "email_password_changed_subject": "Your password was changed — Finance Tracker",

@@ -602,18 +602,18 @@ function BudgetsPage() {
                   </span>
                 </>
               )}
-              {maxBudgets !== null && (
-                <>
-                  {" "}
-                  <span data-testid="budgets-plan-usage">
-                    {m.budgets_plan_usage({
-                      used: budgets.length,
-                      limit: maxBudgets,
-                    })}
-                  </span>
-                </>
-              )}
             </p>
+            {maxBudgets !== null && (
+              <p
+                className="text-xs text-muted-foreground mt-0.5"
+                data-testid="budgets-plan-usage"
+              >
+                {m.budgets_plan_usage({
+                  used: budgets.length,
+                  limit: maxBudgets,
+                })}
+              </p>
+            )}
           </div>
           <Button onClick={openAdd} disabled={atLimit}>
             <svg
