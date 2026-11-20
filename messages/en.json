@@ -425,5 +425,7 @@
   "budget_exists": "This category already has a budget.",
   "budget_category_not_found": "That category no longer exists.",
   "budget_not_found": "That budget no longer exists.",
-  "budget_all_categories_used": "Every category already has a budget."
+  "budget_all_categories_used": "Every category already has a budget.",
+  "budget_warning_above_parent": "This is higher than the {category} budget ({limit}). Spending here also counts toward {category}, so {category} will go over first.",
+  "budget_warning_below_child": "{category} has a higher budget ({limit}). It will only matter once this budget is over."
 }

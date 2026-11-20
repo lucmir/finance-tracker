@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { m } from "#/paraglide/messages";
 import { formatMinor, parseAmountToMinor } from "#/lib/money";
 import { MAX_BUDGET_LIMIT_MINOR } from "#/lib/budget-limits";
+import { findHierarchyConflict } from "#/lib/budget-hierarchy";
 import { DeleteButton, EditButton } from "#/components/ui/action-buttons";
 import { Button } from "#/components/ui/button";
 import { Input } from "#/components/ui/input";
@@ -153,6 +154,8 @@ function BudgetForm({
   editing,
   options,
   hasCategories,
+  budgets,
+  parentOf,
   error,
   onSubmit,
   onClose,
@@ -162,6 +165,9 @@ function BudgetForm({
   editing: Budget | null;
   options: { id: string; label: string }[];
   hasCategories: boolean;
+  /** All budgets and the category tree, for the parent/child warning (D10). */
+  budgets: Budget[];
+  parentOf: (categoryId: string) => string | null | undefined;
   error: string | null;
   onSubmit: (data: { categoryId: string; limitMinor: number }) => Promise<void>;
   onClose: () => void;
@@ -204,6 +210,29 @@ function BudgetForm({
   };
 
   const noOptions = !editing && options.length === 0;
+
+  // Non-blocking warning when this limit is inconsistent with a parent or
+  // subcategory budget (D10). Recomputed as the user types.
+  const selectedCategoryId = editing?.category_id ?? categoryId;
+  const parsedLimit = parseLimit(limit);
+  const conflict =
+    selectedCategoryId && "minor" in parsedLimit
+      ? findHierarchyConflict({
+          categoryId: selectedCategoryId,
+          limitMinor: parsedLimit.minor,
+          budgets,
+          parentOf,
+          excludeBudgetId: editing?.id,
+        })
+      : null;
+  const warning = conflict
+    ? (conflict.kind === "above_ancestor"
+        ? m.budget_warning_above_parent
+        : m.budget_warning_below_child)({
+        category: conflict.budget.category_path.join(" › "),
+        limit: formatLimit(conflict.budget.limit_minor),
+      })
+    : null;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -264,6 +293,16 @@ function BudgetForm({
               autoFocus={!!editing}
             />
           </div>
+
+          {warning && (
+            <div
+              className="p-2 rounded-md bg-amber-500/10 text-amber-600 text-xs"
+              role="status"
+              data-testid="budget-hierarchy-warning"
+            >
+              {warning}
+            </div>
+          )}
 
           {(validationError || error) && (
             <div className="text-destructive text-sm" role="alert">
@@ -393,6 +432,11 @@ function BudgetsPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [removing, setRemoving] = useState<Budget | null>(null);
   const [removeError, setRemoveError] = useState<string | null>(null);
+
+  const parentById = useMemo(
+    () => new Map(categories.map((c) => [c.id, c.parent_id])),
+    [categories],
+  );
 
   // One budget per category: only offer categories without one.
   const options = useMemo(() => {
@@ -532,6 +576,8 @@ function BudgetsPage() {
         editing={editing}
         options={options}
         hasCategories={categories.length > 0}
+        budgets={budgets}
+        parentOf={(id) => parentById.get(id)}
         error={formError}
         onSubmit={handleSubmit}
         onClose={closeForm}

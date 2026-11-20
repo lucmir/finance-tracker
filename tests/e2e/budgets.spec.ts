@@ -6,6 +6,13 @@ import { test, expect, type Page } from "./fixtures";
 
 const budgetRows = (page: Page) => page.getByTestId("budget-row");
 const dialog = (page: Page) => page.getByTestId("budget-dialog");
+/** The row whose category path is exactly `path` (e.g. "Groceries"). */
+const rowFor = (page: Page, path: string) =>
+  budgetRows(page).filter({
+    has: page.getByTestId("budget-category").filter({
+      hasText: new RegExp(`^${path.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`),
+    }),
+  });
 
 async function addBudget(page: Page, category: string, limit: string) {
   await page.getByRole("button", { name: "Add Budget" }).click();
@@ -118,6 +125,54 @@ test.describe("Budgets", () => {
     await expect(
       select.locator("option", { hasText: "Groceries › Vegetables" }),
     ).toHaveCount(1);
+  });
+
+  test("warns, without blocking, when a subcategory budget is above its parent's", async ({
+    page,
+  }) => {
+    await addBudget(page, "Groceries", "400");
+
+    await page.getByRole("button", { name: "Add Budget" }).click();
+    const form = dialog(page);
+    const warning = form.getByTestId("budget-hierarchy-warning");
+    await form.getByLabel("Category").selectOption({ label: "Groceries › Fruits" });
+
+    await form.getByLabel(/Monthly limit/).fill("600");
+    await expect(warning).toContainText(
+      "higher than the Groceries budget (400.00 PLN)",
+    );
+    await form.getByLabel(/Monthly limit/).fill("300");
+    await expect(warning).toBeHidden();
+
+    await form.getByLabel(/Monthly limit/).fill("6000");
+    await expect(warning).toBeVisible();
+    await form.getByRole("button", { name: "Create Budget" }).click();
+    await expect(form).toBeHidden();
+    await expect(
+      rowFor(page, "Groceries › Fruits").getByTestId("budget-limit"),
+    ).toHaveText("6000.00 PLN");
+  });
+
+  test("warns when a parent budget is lowered below a subcategory's", async ({
+    page,
+  }) => {
+    await addBudget(page, "Groceries › Fruits", "300");
+    await addBudget(page, "Groceries", "500");
+
+    await rowFor(page, "Groceries").getByTestId("edit-budget").click();
+    const form = dialog(page);
+    const warning = form.getByTestId("budget-hierarchy-warning");
+    await expect(warning).toBeHidden();
+
+    await form.getByLabel(/Monthly limit/).fill("200");
+    await expect(warning).toContainText(
+      "Groceries › Fruits has a higher budget (300.00 PLN)",
+    );
+    await form.getByRole("button", { name: "Save Changes" }).click();
+    await expect(form).toBeHidden();
+    await expect(rowFor(page, "Groceries").getByTestId("budget-limit")).toHaveText(
+      "200.00 PLN",
+    );
   });
 
   test("deleting a category removes its budget", async ({ page }) => {
