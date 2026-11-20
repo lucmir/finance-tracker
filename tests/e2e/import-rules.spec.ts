@@ -228,6 +228,9 @@ test.describe("Categorization rule management", () => {
       await targets.first().getByTestId("delete-rule").click();
       await page.getByTestId("delete-rule-confirm").click();
       await expect(page.getByTestId("delete-rule-dialog")).toBeHidden();
+      // Wait for the list to refetch, so the next pass never targets the row
+      // being removed.
+      await expect(targets).toHaveCount(count - 1);
     }
 
     // The previously-imported BIEDRONKA row keeps its Groceries category.

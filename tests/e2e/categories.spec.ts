@@ -20,7 +20,7 @@ test.describe("Categories CRUD", () => {
     await expect(
       page.getByRole("heading", { name: "Create Category" }),
     ).toBeHidden();
-    await expect(page.getByText("Test Category")).toBeVisible();
+    await expect(page.locator("main").getByText("Test Category")).toBeVisible();
   });
 
   test("creates a sub-category under an existing parent", async ({ page }) => {
@@ -28,7 +28,7 @@ test.describe("Categories CRUD", () => {
     await page.getByLabel("Name").fill("Parent Category");
     await page.getByLabel("Color").fill("#3f51b5");
     await page.getByRole("button", { name: "Create Category" }).click();
-    await expect(page.getByText("Parent Category")).toBeVisible();
+    await expect(page.locator("main").getByText("Parent Category")).toBeVisible();
 
     await page.getByRole("button", { name: "Add Category" }).click();
     await page.getByLabel("Name").fill("Test Sub-Category");
@@ -38,7 +38,7 @@ test.describe("Categories CRUD", () => {
     await expect(
       page.getByRole("heading", { name: "Create Category" }),
     ).toBeHidden();
-    await expect(page.getByText("Test Sub-Category")).toBeVisible();
+    await expect(page.locator("main").getByText("Test Sub-Category")).toBeVisible();
   });
 
   test("shows validation error when name is empty", async ({ page }) => {
@@ -56,7 +56,7 @@ test.describe("Categories CRUD", () => {
     await page.getByRole("button", { name: "Add Category" }).click();
     await page.getByLabel("Name").fill("Edit Me");
     await page.getByRole("button", { name: "Create Category" }).click();
-    await expect(page.getByText("Edit Me")).toBeVisible();
+    await expect(page.locator("main").getByText("Edit Me")).toBeVisible();
 
     const row = page.getByTestId("category-row").filter({ hasText: "Edit Me" });
     await row.getByTestId("edit-category").click();
@@ -67,7 +67,7 @@ test.describe("Categories CRUD", () => {
     await page.getByRole("button", { name: "Save Changes" }).click();
 
     await expect(page.getByRole("heading", { name: "Edit" })).toBeHidden();
-    await expect(page.getByText("Edit Me Updated")).toBeVisible();
+    await expect(page.locator("main").getByText("Edit Me Updated")).toBeVisible();
   });
 
   test("changes a category's parent", async ({ page }) => {
@@ -86,7 +86,7 @@ test.describe("Categories CRUD", () => {
     await page.getByLabel("Parent Category").selectOption("Target Parent");
     await page.getByRole("button", { name: "Save Changes" }).click();
 
-    await expect(page.getByText("Move Me")).toBeVisible();
+    await expect(page.locator("main").getByText("Move Me")).toBeVisible();
   });
 
   test("deletes a category with no children", async ({ page }) => {
@@ -212,7 +212,7 @@ test.describe("Categories CRUD", () => {
     await page.getByRole("button", { name: "Create Category" }).click();
 
     // Verify child appears indented under parent
-    await expect(page.getByText("Child Category")).toBeVisible();
+    await expect(page.locator("main").getByText("Child Category")).toBeVisible();
 
     const parentRow = page
       .getByTestId("category-row")
