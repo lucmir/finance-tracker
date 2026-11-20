@@ -17,6 +17,7 @@ they deliver (e.g. `Delivers: T2, T5`).
 | T8 | Plan limits | Free plan: up to 3 budgets. Pro: unlimited. Hitting the limit prompts an upgrade. |
 | T9 | Compliance | Budgets (and alert records) are included in the GDPR export and removed on account deletion. |
 | T10 | No regressions | Existing features keep working (including deleting a category that has a budget); `pnpm run check` passes. |
+| T11 | README | The README briefly describes the architecture and the features, with a focus on budgets, and includes screenshots. |
 
 ## Design decisions
 
@@ -141,7 +142,7 @@ Rows are in execution order; step IDs never change once assigned.
 | S4 | `feat(budgets): show monthly progress` | T3, T4, T5, T6 | S1, S3 | todo |
 | S5 | `feat(budgets): email when a budget is exceeded` | T7 | S4 | todo |
 | S6 | `feat(billing): limit budgets on the free plan` | T8 | S3 | todo |
-| S7 | `docs: document budgets` | T10 | S5, S6 | todo |
+| S7 | `docs: document architecture and budgets in the README` | T10, T11 | S5, S6 | todo |
 | S8 | `fix(transactions): show dates without a time zone shift` (optional) | — | — | todo |
 
 Conventions for every PR:
@@ -280,11 +281,22 @@ This file. Reviewed as text; nothing to test.
   Switch to Pro in the console, reload → the 4th can be added. Switch back to
   Free → all 4 remain, Add is blocked, and Billing shows 4 of 3.
 
-### S7. Documentation
-- README feature list gains Budgets; known limitations noted (receipt items
-  counted by the transaction's category, UTC month, single currency). Plan
-  statuses updated.
-- Manual: full demo run-through of S3–S6 on a fresh test-mode server.
+### S7. README: architecture, features, screenshots (T11)
+- **Architecture (brief):** stack; folder layout; how a feature flows from
+  the schema through `*.server.ts` and `*.functions.ts` to a route with
+  TanStack Query; where auth, plan limits, email and the hourly sweep plug in.
+- **Features:** short overview of the existing ones, then a Budgets section:
+  what a budget counts (subcategories, expenses only, UTC calendar month),
+  the over-budget email, the Free/Pro limit, and known limitations (receipt
+  items counted by the transaction's category, single currency).
+- **Screenshots** of the demo user (`pnpm run seed:demo --reset`, so they
+  show demo data only), captured with playwright-cli and stored in
+  `docs/screenshots/`: Budgets page with under / near / over budgets, the
+  add-budget dialog, the Free plan limit with the upgrade prompt, and the
+  dashboard. The over-budget email is shown as a text sample.
+- Plan statuses updated.
+- Manual: read the README on the PR's GitHub page (images render); full demo
+  run-through of S3–S6 on a freshly seeded dev server.
 
 ### S8. Transactions date display (optional)
 - `formatTxDate` in `transactions.tsx` parses calendar dates as UTC, so dates
