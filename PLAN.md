@@ -129,10 +129,12 @@ Existing issues, not caused by this work. Each would be its own PR if picked up.
 
 | ID | Issue | Found in |
 | --- | --- | --- |
-| F1 | Two flaky E2E tests: `categories.spec.ts:59` (strict-mode race on `getByText("Edit Me")`) and `import-dedup.spec.ts:27` (file-chooser timeout). Passed on rerun. | S9 CI |
+| F1 | Two flaky E2E tests: `categories.spec.ts:59` (strict-mode race on `getByText("Edit Me")`) and `import-dedup.spec.ts:27` (file-chooser timeout). Passed on rerun. Fixed in #7, together with a third race in the import specs. | S9 CI |
 | F2 | Scan Receipt can't create a new transaction once a match is suggested: any transaction on the same date counts as a match, editing the date doesn't refresh it, and the "Refresh match" message exists without a button. | S1 manual test |
 | F3 | The demo seed moves later-day entries of the current month to today, so today is crowded and scanning a receipt as the demo user always links (because of F2). | S1 manual test |
 | F4 | The CSP (`style-src 'self' 'unsafe-inline'`) blocks the Google Fonts stylesheet, so every page logs a console error and falls back to system fonts. | S1 manual test |
+| F5 | The Categories page hardcodes some English text instead of Paraglide messages: the page title and subtitle, "Choose how to handle them:" in the delete dialog, and the server's error strings. | S3 |
+| F6 | The category dialog only offers top-level categories as parents, so the UI can't create a third level, and editing a third-level category (e.g. the demo's Coffee) can't show its real parent. The data model and budgets support any depth. | S3 |
 
 ## Implementation plan
 
@@ -148,8 +150,8 @@ Rows are in execution order; step IDs never change once assigned.
 | S0 | `docs: add budgets plan` | — | — | done (#2) |
 | S9 | `chore(seed): add demo user seed for local testing` | — | S0 | done (#3) |
 | S1 | `fix(receipts): store scanned receipts as expenses` | D9, T5 | S0 | done (#4) |
-| S2 | `feat(budgets): add budgets data model` | T9, T10 (D4) | S0 | in review |
-| S3 | `feat(budgets): add budgets page` | T1, T2 | S2 | todo |
+| S2 | `feat(budgets): add budgets data model` | T9, T10 (D4) | S0 | done (#5) |
+| S3 | `feat(budgets): add budgets page` | T1, T2 | S2 | in review |
 | S4 | `feat(budgets): show monthly progress` | T3, T4, T5, T6 | S1, S3 | todo |
 | S5 | `feat(budgets): email when a budget is exceeded` | T7 | S4 | todo |
 | S6 | `feat(billing): limit budgets on the free plan` | T8 | S3 | todo |
