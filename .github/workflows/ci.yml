@@ -1,17 +1,26 @@
 #
-# Runs the full check (typecheck, lint, unit, E2E against the production
-# build) on pull requests and on pushes to main.
+# Runs the same checks as `pnpm run check`, split into two parallel jobs:
+# static checks (typecheck, lint, unit tests) and E2E against the production
+# build. Pull requests and pushes to main; docs-only changes are skipped.
 
 name: CI
 
 on:
   pull_request:
+    paths-ignore: ["**.md"]
   push:
     branches: [main]
+    paths-ignore: ["**.md"]
+
+# A new push to a pull request cancels its run still in progress. Runs on
+# main are never cancelled.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  check:
-    # Pinned: ubuntu-latest is 26.04, which Playwright 1.59 does not support.
+  static:
+    name: Typecheck, lint, unit tests
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -21,8 +30,29 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec playwright install chromium --with-deps
-      - run: pnpm run check
+      - run: pnpm run typecheck
+      - run: pnpm run lint
+      - run: pnpm run test
+
+  e2e:
+    name: E2E tests
+    runs-on: ubuntu-24.04
+    # Official Playwright image: Chromium and its OS dependencies are
+    # preinstalled, so nothing is downloaded from apt or the browser CDN on
+    # each run. The tag must match @playwright/test in pnpm-lock.yaml;
+    # otherwise the tests fail with "Executable doesn't exist".
+    container:
+      image: mcr.microsoft.com/playwright:v1.59.1-noble
+      options: --user 1001
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run test:e2e
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
