@@ -447,5 +447,7 @@
   "dashboard_budgets_more": "+ {n} more",
   "dashboard_budgets_empty": "No budgets yet.",
   "dashboard_budgets_empty_cta": "Set a monthly limit for a category",
-  "budget_left_amount": "{amount} left"
+  "budget_left_amount": "{amount} left",
+  "dashboard_budgets_hint": "{month} · all accounts, not affected by the filters below",
+  "dashboard_overview_title": "Spending overview"
 }

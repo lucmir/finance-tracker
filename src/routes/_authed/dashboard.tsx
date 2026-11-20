@@ -366,7 +366,13 @@ function Dashboard() {
             to everything below them) don't affect them. */}
         <BudgetsSummaryCard />
 
-        <div className="space-y-6">
+        <section
+          aria-labelledby="dashboard-overview-title"
+          className="space-y-6 border-t border-line/50 pt-8"
+        >
+          <h2 id="dashboard-overview-title" className="text-base font-semibold">
+            {m.dashboard_overview_title()}
+          </h2>
           <div
             className="flex flex-wrap items-center gap-4"
             data-testid="dashboard-filters"
@@ -435,7 +441,7 @@ function Dashboard() {
               <Outlet />
             </div>
           )}
-        </div>
+        </section>
       </main>
     </div>
   );
