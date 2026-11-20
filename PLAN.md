@@ -147,8 +147,8 @@ Rows are in execution order; step IDs never change once assigned.
 | --- | --- | --- | --- | --- |
 | S0 | `docs: add budgets plan` | — | — | done (#2) |
 | S9 | `chore(seed): add demo user seed for local testing` | — | S0 | done (#3) |
-| S1 | `fix(receipts): store scanned receipts as expenses` | D9, T5 | S0 | in review |
-| S2 | `feat(budgets): add budgets data model` | T9, T10 (D4) | S0 | todo |
+| S1 | `fix(receipts): store scanned receipts as expenses` | D9, T5 | S0 | done (#4) |
+| S2 | `feat(budgets): add budgets data model` | T9, T10 (D4) | S0 | in review |
 | S3 | `feat(budgets): add budgets page` | T1, T2 | S2 | todo |
 | S4 | `feat(budgets): show monthly progress` | T3, T4, T5, T6 | S1, S3 | todo |
 | S5 | `feat(budgets): email when a budget is exceeded` | T7 | S4 | todo |
@@ -217,13 +217,18 @@ This file. Reviewed as text; nothing to test.
   `sent_at`; unique `(budget_id, month)`). Migration via `pnpm db:generate`.
 - `budgets.server.ts` starts with `deleteBudgetsForCategories(userId, ids)`;
   `deleteCategory` calls it for the category and its descendants (D4).
-- Compliance: budgets and alerts in the export (`export.json`) and deleted in
-  `hardDeleteUser`. `budget` added to `OWNED_TABLES`.
-- Tests: unit tests for export, hard delete, and category cleanup.
+- Compliance: budgets in the export (`export.json`, each with its `alerts`
+  nested like receipt items, plus `budgets.csv`) and deleted in
+  `hardDeleteUser`; the privacy policy's "What we store" lists budgets and
+  alert records. `budget` added to `OWNED_TABLES`.
+- Tests: unit tests for export, hard delete, category cleanup, and the schema
+  constraints (one budget per category, positive limit, one alert per budget
+  per month).
 - Manual (Dev): restart on your existing database; the server boots (migration
   applied) and existing pages work. Settings → export data → `export.json`
-  contains `"budgets": []` and `"budget_alerts": []`. Deleting a category
-  still works. (No UI to create budgets yet; that comes in S3.)
+  contains `"budgets": []` and the zip has a `budgets.csv` with only a header.
+  Privacy page mentions budgets. Deleting a category still works. (No UI to
+  create budgets yet; that comes in S3.)
 
 ### S3. Budgets page: add, change, remove (T1, T2, D7)
 - Server functions in `budgets.functions.ts` (`getBudgets`, `createBudget`,
