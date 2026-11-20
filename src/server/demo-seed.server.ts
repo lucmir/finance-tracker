@@ -53,6 +53,16 @@ const MONTH_TEMPLATE: TemplateTx[] = [
   { day: 28, path: ["Entertainment", "Dining Out"], amountMinor: -8600, description: "Sushi bar", account: "card" },
 ];
 
+// Sample budgets, chosen against the current month's template amounts so the
+// Budgets page shows all three states: Groceries near its limit (~367 of
+// 400), Entertainment over (~288 of 250, including the third-level Coffee),
+// Transport well under (220 of 500). Three is also the Free plan's limit.
+const DEMO_BUDGETS: { path: string[]; limitMinor: number }[] = [
+  { path: ["Groceries"], limitMinor: 40000 },
+  { path: ["Entertainment"], limitMinor: 25000 },
+  { path: ["Transport"], limitMinor: 50000 },
+];
+
 // Month-to-month variation for the dashboard charts, oldest month first.
 const MONTH_FACTORS = [0.9, 1.1, 1.0];
 
@@ -63,6 +73,7 @@ export interface DemoSeedResult {
   categories: number;
   accounts: number;
   transactions: number;
+  budgets: number;
   /** First and last transaction dates (YYYY-MM-DD). */
   dateRange: [string, string];
 }
@@ -168,6 +179,19 @@ export async function seedDemo(
 
   await db.insert(schema.transactions).values(rows);
 
+  await db.insert(schema.budgets).values(
+    DEMO_BUDGETS.map((b) => {
+      const categoryId = categoryIdByPath.get(b.path.join(" › "));
+      if (!categoryId) throw new Error(`Demo seed: unknown category ${b.path.join(" › ")}`);
+      return {
+        id: crypto.randomUUID(),
+        user_id: userId,
+        category_id: categoryId,
+        limit_minor: b.limitMinor,
+      };
+    }),
+  );
+
   const dates = rows.map((r) => r.date).sort();
   return {
     userId,
@@ -176,6 +200,7 @@ export async function seedDemo(
     categories: categoryIdByPath.size,
     accounts: Object.keys(accountIds).length,
     transactions: rows.length,
+    budgets: DEMO_BUDGETS.length,
     dateRange: [dates[0], dates[dates.length - 1]],
   };
 }
