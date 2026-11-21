@@ -166,8 +166,8 @@ Rows are in execution order; step IDs never change once assigned.
 | S4 | `feat(budgets): show monthly progress` | T3, T4, T5, T6 | S1, S3 | done (#9) |
 | S5 | `feat(budgets): email when a budget is exceeded` | T7 | S4 | done (#10) |
 | S6 | `feat(billing): limit budgets on the free plan` | T8 | S3 | done (#11) |
-| S10 | `feat(dashboard): add a budgets summary card` | T12 | S4 | in review |
-| S7 | `docs: document architecture and budgets in the README` | T10, T11 | S5, S6, S10 | todo |
+| S10 | `feat(dashboard): add a budgets summary card` | T12 | S4 | done (#13) |
+| S7 | `docs: document architecture and budgets in the README` | T10, T11 | S5, S6, S10 | in review |
 | S8 | `fix(transactions): show dates without a time zone shift` (optional) | — | — | done (#12) |
 
 Conventions for every PR:
@@ -342,6 +342,16 @@ This file. Reviewed as text; nothing to test.
   `docs/screenshots/`: Budgets page with under / near / over budgets, the
   add-budget dialog, the Free plan limit with the upgrade prompt, and the
   dashboard. The over-budget email is shown as a text sample.
+- **GIF of adding a budget** (requested in review): a short clip of the demo
+  user opening Budgets, adding a subcategory budget, and seeing it appear
+  with its progress, plus the D10 warning if it fits. Recorded with
+  Playwright's video recording (a scripted, repeatable flow), converted from
+  WebM to GIF with `ffmpeg` (palette-based, ~10 fps, ~800 px wide, aim for
+  under 3 MB), stored as `docs/screenshots/add-budget.gif`. `ffmpeg` isn't
+  installed (Playwright's bundled build only encodes WebM), so this needs
+  `brew install ffmpeg`, to be confirmed before installing. A GIF rather than
+  a video file, since GitHub READMEs don't play video files committed to
+  the repo.
 - Plan statuses updated.
 - Manual: read the README on the PR's GitHub page (images render); full demo
   run-through of S3–S6 on a freshly seeded dev server.
