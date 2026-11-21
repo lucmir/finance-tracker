@@ -438,5 +438,16 @@
   "budgets_plan_usage": "{used} of {limit} budgets on the Free plan.",
   "budget_limit_reached": "The Free plan includes up to {limit} budgets. Upgrade to Pro for unlimited budgets.",
   "billing_budgets_usage": "{used} of {limit} budgets",
-  "billing_budgets_unlimited": "{used} budgets (unlimited)"
+  "billing_budgets_unlimited": "{used} budgets (unlimited)",
+  "dashboard_budgets_title": "Budgets this month",
+  "dashboard_budgets_manage": "Manage budgets",
+  "dashboard_budgets_over": "{n} over",
+  "dashboard_budgets_near": "{n} close to the limit",
+  "dashboard_budgets_on_track": "{n} on track",
+  "dashboard_budgets_more": "+ {n} more",
+  "dashboard_budgets_empty": "No budgets yet.",
+  "dashboard_budgets_empty_cta": "Set a monthly limit for a category",
+  "budget_left_amount": "{amount} left",
+  "dashboard_budgets_hint": "{month} · all accounts, not affected by the filters above",
+  "dashboard_overview_title": "Spending overview"
 }

@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import { m } from "#/paraglide/messages";
+import { BudgetsSummaryCard } from "#/components/budgets-summary-card";
 import { Select, SelectItem } from "#/components/ui/select";
 import { formatMinor } from "#/lib/money";
 import {
@@ -352,10 +353,25 @@ function Dashboard() {
       {/* Header */}
       <header className="border-b border-line/50 bg-header-bg/80 backdrop-blur-sm">
         <div className="page-wrap py-4">
-          <h1 className="text-xl font-bold display-title mb-3">
+          <h1 className="text-xl font-bold display-title">
             {m.dashboard_heading()}
           </h1>
-          <div className="flex flex-wrap items-center gap-4">
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="page-wrap py-8 space-y-8">
+        <section
+          aria-labelledby="dashboard-overview-title"
+          className="space-y-6"
+        >
+          <h2 id="dashboard-overview-title" className="text-base font-semibold">
+            {m.dashboard_overview_title()}
+          </h2>
+          <div
+            className="flex flex-wrap items-center gap-4"
+            data-testid="dashboard-filters"
+          >
             <PeriodSelector value={period} onChange={setPeriod} />
             <AccountFilter
               accounts={accounts}
@@ -363,67 +379,70 @@ function Dashboard() {
               onChange={setAccountId}
             />
           </div>
-        </div>
-      </header>
 
-      {/* Main Content */}
-      <main className="page-wrap py-8">
-        {isLoading ? (
-          <div className="flex items-center justify-center py-24">
-            <div className="flex flex-col items-center gap-3">
-              <div className="size-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-              <span className="text-sm text-muted-foreground">
-                {m.loading()}
-              </span>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-24">
+              <div className="flex flex-col items-center gap-3">
+                <div className="size-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                <span className="text-sm text-muted-foreground">
+                  {m.loading()}
+                </span>
+              </div>
             </div>
-          </div>
-        ) : (
-          <div className="space-y-8">
-            {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <SummaryCard
-                title={m.analytics_total_income()}
-                value={`${formatMinor(summary?.totalIncome ?? 0)} ${m.analytics_currency()}`}
-                accent="income"
-              />
-              <SummaryCard
-                title={m.analytics_total_expenses()}
-                value={`${formatMinor(summary?.totalExpenses ?? 0)} ${m.analytics_currency()}`}
-                accent="expense"
-              />
-              <SummaryCard
-                title={m.analytics_net()}
-                value={`${formatMinor(summary?.net ?? 0)} ${m.analytics_currency()}`}
-                accent="net"
-              />
-            </div>
-
-            {/* Charts Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Sankey Chart */}
-              <div className="lg:col-span-2 island-shell rounded-xl p-4">
-                <h2 className="text-sm font-semibold mb-1">
-                  {m.analytics_spending_sankey()}
-                </h2>
-                <p className="text-xs text-muted-foreground mb-4">
-                  {m.analytics_spending_sankey_desc()}
-                </p>
-                <SpendingSankeyChart
-                  nodes={sankeyData?.nodes ?? []}
-                  links={sankeyData?.links ?? []}
+          ) : (
+            <div className="space-y-8">
+              {/* Summary Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <SummaryCard
+                  title={m.analytics_total_income()}
+                  value={`${formatMinor(summary?.totalIncome ?? 0)} ${m.analytics_currency()}`}
+                  accent="income"
+                />
+                <SummaryCard
+                  title={m.analytics_total_expenses()}
+                  value={`${formatMinor(summary?.totalExpenses ?? 0)} ${m.analytics_currency()}`}
+                  accent="expense"
+                />
+                <SummaryCard
+                  title={m.analytics_net()}
+                  value={`${formatMinor(summary?.net ?? 0)} ${m.analytics_currency()}`}
+                  accent="net"
                 />
               </div>
 
-              {/* Top Categories */}
-              <div>
-                <TopCategoriesList categories={summary?.topCategories ?? []} />
-              </div>
-            </div>
+              {/* Charts Row */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Sankey Chart */}
+                <div className="lg:col-span-2 island-shell rounded-xl p-4">
+                  <h2 className="text-sm font-semibold mb-1">
+                    {m.analytics_spending_sankey()}
+                  </h2>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    {m.analytics_spending_sankey_desc()}
+                  </p>
+                  <SpendingSankeyChart
+                    nodes={sankeyData?.nodes ?? []}
+                    links={sankeyData?.links ?? []}
+                  />
+                </div>
 
-            {/* Outlet for nested routes */}
-            <Outlet />
-          </div>
-        )}
+                {/* Top Categories */}
+                <div>
+                  <TopCategoriesList categories={summary?.topCategories ?? []} />
+                </div>
+              </div>
+
+              {/* Outlet for nested routes */}
+              <Outlet />
+            </div>
+          )}
+        </section>
+
+        {/* Budgets are always the current month across all accounts, so the
+            filters above don't apply to them; the section's hint says so. */}
+        <div className="border-t border-line/50 pt-8">
+          <BudgetsSummaryCard />
+        </div>
       </main>
     </div>
   );
