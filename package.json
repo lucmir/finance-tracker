@@ -24,7 +24,8 @@
     "db:push": "drizzle-kit push",
     "db:pull": "drizzle-kit pull",
     "db:studio": "drizzle-kit studio",
-    "seed:demo": "tsx scripts/seed-demo.ts"
+    "seed:demo": "tsx scripts/seed-demo.ts",
+    "readme:media": "tsx scripts/readme-media.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1084.0",
