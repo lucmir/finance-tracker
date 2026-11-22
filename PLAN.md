@@ -167,7 +167,7 @@ Rows are in execution order; step IDs never change once assigned.
 | S5 | `feat(budgets): email when a budget is exceeded` | T7 | S4 | done (#10) |
 | S6 | `feat(billing): limit budgets on the free plan` | T8 | S3 | done (#11) |
 | S10 | `feat(dashboard): add a budgets summary card` | T12 | S4 | done (#13) |
-| S7 | `docs: document architecture and budgets in the README` | T10, T11 | S5, S6, S10 | in review |
+| S7 | `docs: document architecture and budgets in the README` | T10, T11 | S5, S6, S10 | done (#14) |
 | S8 | `fix(transactions): show dates without a time zone shift` (optional) | — | — | done (#12) |
 
 Conventions for every PR:
